@@ -5,7 +5,7 @@
     <PropertyGroup>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-        <ProjectGuid>{8EBE1B5F-19C5-4ECC-B430-F77A1597E2AA}</ProjectGuid>
+        <ProjectGuid>{238DFD5E-4FED-4A43-836F-6A45D8E00C72}</ProjectGuid>
         <OutputType>WinExe</OutputType>
         <RootNamespace>WPFFrontendChatClient</RootNamespace>
         <AssemblyName>WPFFrontendChatClient</AssemblyName>
