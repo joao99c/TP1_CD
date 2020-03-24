@@ -2,6 +2,7 @@
 {
     public abstract class Utilizador
     {
-        protected string nome;
+        public string nome;
+        public string email;
     }
 }
