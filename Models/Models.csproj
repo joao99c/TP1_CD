@@ -7,8 +7,8 @@
         <ProjectGuid>{DC724E5B-FA96-4844-82AA-C6E5F4BAD39D}</ProjectGuid>
         <OutputType>Library</OutputType>
         <AppDesignerFolder>Properties</AppDesignerFolder>
-        <RootNamespace>Classes</RootNamespace>
-        <AssemblyName>Classes</AssemblyName>
+        <RootNamespace>Models</RootNamespace>
+        <AssemblyName>Models</AssemblyName>
         <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
         <FileAlignment>512</FileAlignment>
     </PropertyGroup>
@@ -32,6 +32,12 @@
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
     <ItemGroup>
+        <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed">
+          <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+          <Private>True</Private>
+        </Reference>
+        <Reference Include="PresentationCore" />
+        <Reference Include="PresentationFramework" />
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Data" />
@@ -40,12 +46,17 @@
     <ItemGroup>
         <Compile Include="Aluno.cs" />
         <Compile Include="Aula.cs" />
+        <Compile Include="Response.cs" />
         <Compile Include="Curso.cs" />
+        <Compile Include="Helpers.cs" />
         <Compile Include="Horario.cs" />
         <Compile Include="Professor.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="UnidadeCurricular.cs" />
         <Compile Include="Utilizador.cs" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Include="packages.config" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
