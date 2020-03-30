@@ -17,7 +17,5 @@ namespace ClassLibrary
             tcpClient.Client.Receive(data);
             return JsonConvert.DeserializeObject<T>(Encoding.Unicode.GetString(data));
         }
-        
-       
     }
 }

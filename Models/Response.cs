@@ -17,31 +17,41 @@ namespace ClassLibrary
             // ....
         }
 
-        public Operation op;
-        public string msg;
-        public T user;
+        public Operation Op { get; set; }
+        public string Msg { get; set; }
+        public T User { get; set; }
 
         public Response(Operation op, T user, string msg = null)
         {
-            this.op = op;
-            this.msg = op.ToString();
-
+            Op = op;
+            Msg = op.ToString();
+            User = user;
             switch (op)
             {
-                case Operation.EntrarChat: break;
-                case Operation.SairChat: break;
+                case Operation.EntrarChat:
+                {
+                    break;
+                }
+                case Operation.SairChat:
+                {
+                    break;
+                }
                 case Operation.EnviarMensagem:
-                    this.msg = msg;
+                {
+                    Msg = msg;
                     break;
+                }
                 case Operation.GetUtilizador:
-                    this.msg = msg;
+                {
+                    Msg = msg;
                     break;
+                }
             }
         }
 
         public static void sendStringMessage(NetworkStream ns, string msg)
         {
-            ns.Write(Encoding.UTF8.GetBytes(msg), 0, Encoding.UTF8.GetBytes(msg).Length);
+            ns.Write(Encoding.UTF8.GetBytes(msg), 0, Encoding.Unicode.GetBytes(msg).Length);
         }
     }
 }

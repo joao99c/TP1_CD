@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
-using Classes;
 using ClassLibrary;
+using Models;
 
 namespace TestingSocketsAndShit
 {
@@ -18,70 +18,69 @@ namespace TestingSocketsAndShit
 
         public class Server
         {
-            private int _port;
-            private TcpListener _tcpListener;
-            private bool _running;
-            private TcpClient _connectedTcpClient;
-            private readonly BinaryFormatter _bFormatter;
-            private Thread _connectionThread;
-            private Thread _messageThread;
-            private NetworkStream _netStream;
-            private Utilizador[] _registedUtilizadors;
-
+            public int Port { get; set; }
+            public TcpListener TcpListener { get; set; }
+            public bool Running { get; private set; }
+            public TcpClient ConnectedTcpClient { get; private set; }
+            public BinaryFormatter BFormatter { get; set; }
+            public Thread ConnectionThread { get; private set; }
+            public Thread MessageThread { get; private set; }
+            public NetworkStream NetStream { get; set; }
+            public Utilizador[] RegistedUtilizadors { get; set; }
 
             public Server(int port)
             {
-                _port = port;
-                _tcpListener = new TcpListener(IPAddress.Loopback, port);
+                Port = port;
+                TcpListener = new TcpListener(IPAddress.Loopback, port);
             }
 
             public void Start()
             {
-                _tcpListener.Start();
+                TcpListener.Start();
                 Console.WriteLine("Waiting for a connection... ");
-                _running = true;
-                _connectionThread = new Thread(ListenForClientConnections);
-                _connectionThread.Start();
+                Running = true;
+                ConnectionThread = new Thread(ListenForClientConnections);
+                ConnectionThread.Start();
             }
 
             public void Stop()
             {
-                if (_running)
+                if (Running)
                 {
-                    _tcpListener.Stop();
-                    _running = false;
+                    TcpListener.Stop();
+                    Running = false;
                 }
             }
 
             private void ListenForClientConnections()
             {
-                while (_running)
+                while (Running)
                 {
-                    _connectedTcpClient = _tcpListener.AcceptTcpClient();
+                    ConnectedTcpClient = TcpListener.AcceptTcpClient();
                     Console.WriteLine("Connected!");
 
                     // Ask username and email
-                    Response<Aluno> _Response = Helpers.receiveSerializedMessage<Response<Aluno>>(_connectedTcpClient);
-                    
+                    Response<Aluno> _Response = Helpers.receiveSerializedMessage<Response<Aluno>>(ConnectedTcpClient);
+
                     // Check if user or email using the email
-                    if (!_Response.user.email.Contains("alunos"))
+                    if (!_Response.User.Email.Contains("alunos"))
                     {
                         Console.WriteLine("Professor");
                         // Return da class do utilizador ou de um novo utilizador
-                        Professor prof = LogOrSignInUtilizador<Professor>(_Response.user.nome);
-                        Helpers.sendSerializedMessage(_connectedTcpClient, prof);
-                        _messageThread = new Thread(MessageHandler<Professor>);
+                        Professor prof = LogOrSignInUtilizador<Professor>(_Response.User.Nome);
+                        Helpers.sendSerializedMessage(ConnectedTcpClient, prof);
+                        MessageThread = new Thread(MessageHandler<Professor>);
                     }
                     else
                     {
                         Console.WriteLine("Aluno");
                         // Return da class do utilizador ou de um novo utilizador
-                        Aluno aluno = LogOrSignInUtilizador<Aluno>(_Response.user.nome);
-                        Helpers.sendSerializedMessage(_connectedTcpClient, aluno);
-                        _messageThread = new Thread(MessageHandler<Aluno>);
+                        Aluno aluno = LogOrSignInUtilizador<Aluno>(_Response.User.Nome);
+                        Helpers.sendSerializedMessage(ConnectedTcpClient, aluno);
+                        MessageThread = new Thread(MessageHandler<Aluno>);
                     }
 
-                    _messageThread.Start();
+                    MessageThread.Start();
                 }
             }
 
@@ -90,9 +89,8 @@ namespace TestingSocketsAndShit
                 while (true)
                 {
                     // Get Response
-                    Response<T> _Response = Helpers.receiveSerializedMessage<Response<T>>(_connectedTcpClient);
-
-                    switch (_Response.op)
+                    Response<T> response = Helpers.receiveSerializedMessage<Response<T>>(ConnectedTcpClient);
+                    switch (response.Op)
                     {
                         case Response<T>.Operation.EntrarChat:
                             Console.WriteLine("EntrarChat");
@@ -101,25 +99,24 @@ namespace TestingSocketsAndShit
                         case Response<T>.Operation.SairChat: break;
                     }
 
-                    _Response = null;
+                    response = null;
                 }
             }
 
-
             private T LogOrSignInUtilizador<T>(string nome) where T : Utilizador, new()
             {
-                if (_registedUtilizadors != null)
+                if (RegistedUtilizadors != null)
                 {
-                    foreach (T user in _registedUtilizadors)
+                    foreach (T user in RegistedUtilizadors)
                     {
-                        if (user.nome == nome)
+                        if (user.Nome == nome)
                         {
                             return user;
                         }
                     }
                 }
 
-                return new T {nome = nome};
+                return new T {Nome = nome};
             }
         }
     }

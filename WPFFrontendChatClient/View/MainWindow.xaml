@@ -1,0 +1,55 @@
+﻿<Window x:Class="WPFFrontendChatClient.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WPFFrontendChatClient"
+        mc:Ignorable="d"
+        Title="Chat Window" Width="1280" Height="720" MinWidth="1280" MinHeight="720" MaxWidth="1280" MaxHeight="720"
+        ResizeMode="CanMinimize">
+    <Grid>
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Left" VerticalAlignment="Top" Margin="10,10,10,10">
+                <TabControl TabStripPlacement="Top">
+                    <TabItem>
+                        <TabItem.Header>
+                            <TextBlock Text="Aulas" FontWeight="Bold" />
+                        </TabItem.Header>
+                        <DockPanel VerticalAlignment="Stretch">
+                            <TextBlock Foreground="Black" FontSize="12" Text="Aula 1" />
+                            <TextBlock Foreground="Black" FontSize="12" Text="Aula 2" />
+                            <TextBlock Foreground="Black" FontSize="12" Text="Aula 3" />
+                        </DockPanel>
+                    </TabItem>
+                    <TabItem>
+                        <TabItem.Header>
+                            <TextBlock Text="Utilizadores" FontWeight="Bold" />
+                        </TabItem.Header>
+                        <DockPanel VerticalAlignment="Stretch">
+                            <TextBlock Foreground="Black" FontSize="12" Text="User 1" />
+                            <TextBlock Foreground="Black" FontSize="12" Text="User 2" />
+                            <TextBlock Foreground="Black" FontSize="12" Text="User 3" />
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Center"
+                        HorizontalAlignment="Right" Margin="10,10,10,10">
+                <TextBlock Text="User Logado" Foreground="Black" FontSize="12" FontWeight="Bold" />
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" VerticalAlignment="Center"
+                        Margin="10,10,10,10">
+                <TextBox Name="textBoxMessage" Width="1035" Height="Auto" MaxHeight="50" AcceptsReturn="True"
+                         SpellCheck.IsEnabled="True" Language="pt-PT" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Visible" />
+                <Button Name="btnEnviar" Content="Enviar" ClickMode="Press" Margin="10,0,0,0" Width="50"
+                        HorizontalAlignment="Left" />
+            </StackPanel>
+            <StackPanel Margin="10,0,10,0" VerticalAlignment="Bottom">
+                <TextBlock Foreground="Black" FontSize="15" Text="MSG 1" />
+                <TextBlock HorizontalAlignment="Right" Foreground="Black" FontSize="15" Text="MSG 2" />
+                <TextBlock Foreground="Black" FontSize="15" Text="MSG 3" />
+            </StackPanel>
+        </DockPanel>
+    </Grid>
+</Window>
