@@ -6,7 +6,7 @@ using System.Threading;
 using ClassLibrary;
 using Models;
 
-namespace TestingSocketsAndShit
+namespace ChatServer
 {
     internal class Program
     {
