@@ -1,17 +1,19 @@
 ﻿using System.Windows;
+using CommonServiceLocator;
 using WPFFrontendChatClient.ViewModel;
 
-namespace WPFFrontendChatClient
+namespace WPFFrontendChatClient.View
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow
+    public partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
-            CommonServiceLocator.ServiceLocator.Current.GetInstance<MainViewModel>().MainDispatcher = Application.Current.Dispatcher;
+            ServiceLocator.Current.GetInstance<MainViewModel>().MainDispatcher =
+                Application.Current.Dispatcher;
         }
     }
 }

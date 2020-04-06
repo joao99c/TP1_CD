@@ -1,64 +1,41 @@
-﻿using System;
-using System.Threading;
-using System.Windows.Input;
 using System.Windows.Threading;
-using CommonServiceLocator;
 using GalaSoft.MvvmLight;
 
 namespace WPFFrontendChatClient.ViewModel
 {
+    /// <summary>
+    /// This class contains properties that the main View can data bind to.
+    /// <para>
+    /// Use the <strong>mvvminpc</strong> snippet to add bindable properties to this ViewModel.
+    /// </para>
+    /// <para>
+    /// You can also use Blend to data bind with the tool's support.
+    /// </para>
+    /// <para>
+    /// See http://www.galasoft.ch/mvvm
+    /// </para>
+    /// </summary>
     public class MainViewModel : ViewModelBase
     {
+        /// <summary>
+        /// Initializes a new instance of the MainViewModel class.
+        /// </summary>
         public MainViewModel()
         {
-            
-            /*UserObservable = new ObservableCollection<User>();
-            UserObservable.Add(
-                new User() { 
-                    Username = "michael", 
-                    Password = "123456" 
-                }
-            );
-            AddUserCommand = new RelayCommand(AddUserAction);
-            ConnectCommand = new RelayCommand(ConnectAction);
+            ////if (IsInDesignMode)
+            ////{
+            ////    // Code runs in Blend --> create design time data.
+            ////}
+            ////else
+            ////{
+            ////    // Code runs "for real"
+            ////}
             IpAddress = "192.168.1.8";
-            Port = "15000";*/
+            Port = "15000";
         }
-        
+
         public Dispatcher MainDispatcher { get; set; }
-        // public string Username { get; set; }
-        // public string Password { get; set; }
-        // public string IpAddress { get; set; }
-        // public string Port { get; set; }
-        // public ObservableCollection<User> UserObservable { get; set; }
-        
-        // public ICommand AddUserCommand { get; set; }
-        // public ICommand ConnectCommand { get; set; }
-
-        /*private void AddUserAction()
-        {
-            User user = new User()
-            {
-                Username = Username,
-                Password = Password
-            };
-            UserObservable.Add(user);
-        }*/
-
-        /*private void ConnectAction()
-        {
-            NetworkService networkService = ServiceLocator.Current.GetInstance<NetworkService>();
-            networkService.IpAddress = IpAddress;
-            networkService.Port = int.Parse(Port);
-            Thread networkServiceThread = new Thread(networkService.Start);
-            networkServiceThread.Start();
-        }*/
-
-        /*public void AddUser(User user)
-        {
-            MainDispatcher.Invoke(new Action(() => {
-                UserObservable.Add(user);
-            }));
-        }*/
+        public string IpAddress { get; set; }
+        public string Port { get; set; }
     }
 }
