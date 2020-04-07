@@ -9,7 +9,10 @@
         Title="Chat Window" Width="1280" Height="720" MinWidth="1280" MinHeight="720" MaxWidth="1280" MaxHeight="720"
         ResizeMode="CanMinimize">
     <Grid>
-        <DockPanel>
+        <DockPanel x:Name="EntrarPanel">
+            <Button Click="ButtonEntrar_Click" Content="Entrar" ClickMode="Press" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </DockPanel>
+        <DockPanel x:Name="ChatPanel" Visibility="Collapsed">
             <StackPanel DockPanel.Dock="Left" VerticalAlignment="Top" Margin="10,10,10,10">
                 <TabControl TabStripPlacement="Top">
                     <TabItem>
@@ -36,17 +39,24 @@
             </StackPanel>
             <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Center"
                         HorizontalAlignment="Right" Margin="10,10,10,10">
-                <TextBlock Text="User Logado" Foreground="Black" FontSize="12" FontWeight="Bold" />
+                <TextBlock x:Name="TextBlockUtilizadorLogado" Foreground="Black" FontSize="12" FontWeight="Bold" />
+                <Button Click="ButtonSair_Click" Content="Sair" ClickMode="Press" Margin="10,0,0,0" />
             </StackPanel>
             <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" VerticalAlignment="Center"
                         Margin="10,10,10,10">
-                <TextBox Name="textBoxMessage" Width="1035" Height="Auto" MaxHeight="50" AcceptsReturn="True"
+                <TextBox Name="TextBoxMensagem" Width="1035" Height="Auto" MaxHeight="50" AcceptsReturn="True"
                          SpellCheck.IsEnabled="True" Language="pt-PT" TextWrapping="Wrap"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Visible" />
-                <Button Name="btnEnviar" Content="Enviar" ClickMode="Press" Margin="10,0,0,0" Width="50"
+                <Button Name="ButtonEnviar" Content="Enviar" ClickMode="Press" Margin="10,0,0,0" Width="50"
                         HorizontalAlignment="Left" />
             </StackPanel>
             <StackPanel Margin="10,0,10,0" VerticalAlignment="Bottom">
+                
+                
+                <Label Content="API Call Results" Margin="0,0,0,-5" FontFamily="Segoe Ui" />
+                <TextBox x:Name="ResultText" TextWrapping="Wrap" MinHeight="120" Margin="5" FontFamily="Segoe Ui"/>
+                
+                
                 <TextBlock Foreground="Black" FontSize="15" Text="MSG 1" />
                 <TextBlock HorizontalAlignment="Right" Foreground="Black" FontSize="15" Text="MSG 2" />
                 <TextBlock Foreground="Black" FontSize="15" Text="MSG 3" />

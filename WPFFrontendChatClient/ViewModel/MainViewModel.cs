@@ -30,12 +30,8 @@ namespace WPFFrontendChatClient.ViewModel
             ////{
             ////    // Code runs "for real"
             ////}
-            IpAddress = "192.168.1.8";
-            Port = "15000";
         }
 
         public Dispatcher MainDispatcher { get; set; }
-        public string IpAddress { get; set; }
-        public string Port { get; set; }
     }
 }
