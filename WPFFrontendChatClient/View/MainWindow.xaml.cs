@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
@@ -8,6 +9,8 @@ using System.Windows;
 using System.Windows.Interop;
 using CommonServiceLocator;
 using Microsoft.Identity.Client;
+using Models;
+using Newtonsoft.Json.Linq;
 using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.View
@@ -15,9 +18,9 @@ namespace WPFFrontendChatClient.View
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow
     {
-        //Set the API Endpoint to Graph 'me' endpoint. 
+        // Set the API Endpoint to Graph 'me' endpoint. 
         // To change from Microsoft public cloud to a national cloud, use another value of graphAPIEndpoint.
         // Reference with Graph endpoints here: https://docs.microsoft.com/graph/deployments#microsoft-graph-and-graph-explorer-service-root-endpoints
         string graphAPIEndpoint = "https://graph.microsoft.com/v1.0/me";
@@ -25,11 +28,37 @@ namespace WPFFrontendChatClient.View
         //Set the scope for API call to user.read
         string[] scopes = {"user.read"};
 
+        // VARIÁVEIS DE TESTES (TEMPORÁRIAS)
+        ObservableCollection<Aluno> alunos;
+        ObservableCollection<Aula> aulas;
+
+        int numAlunosTeste;
+        // FIM DE VARIÁVEIS DE TESTES (TEMPORÁRIAS)
+
         public MainWindow()
         {
             InitializeComponent();
             ServiceLocator.Current.GetInstance<MainViewModel>().MainDispatcher =
                 Application.Current.Dispatcher;
+
+            // ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
+            alunos = new ObservableCollection<Aluno>()
+            {
+                new Aluno() {Nome = "Nome Apelido 1"},
+                new Aluno() {Nome = "Nome Apelido 2"},
+                new Aluno() {Nome = "Nome Apelido 3"}
+            };
+            numAlunosTeste = 3;
+            UsersItemsControl.ItemsSource = alunos;
+
+            aulas = new ObservableCollection<Aula>()
+            {
+                new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "CD"}},
+                new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "AEDII"}},
+                new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "LPII"}}
+            };
+            AulasItemsControl.ItemsSource = aulas;
+            // FIM DE ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
         }
 
         /// <summary>
@@ -39,15 +68,13 @@ namespace WPFFrontendChatClient.View
         {
             AuthenticationResult authResult = null;
             var app = App.PublicClientApp;
-            ResultText.Text = string.Empty;
 
             var accounts = await app.GetAccountsAsync();
             var firstAccount = accounts.FirstOrDefault();
 
             try
             {
-                authResult = await app.AcquireTokenSilent(scopes, firstAccount)
-                    .ExecuteAsync();
+                authResult = await app.AcquireTokenSilent(scopes, firstAccount).ExecuteAsync();
             }
             catch (MsalUiRequiredException ex)
             {
@@ -57,31 +84,34 @@ namespace WPFFrontendChatClient.View
 
                 try
                 {
-                    authResult = await app.AcquireTokenInteractive(scopes)
-                        .WithAccount(accounts.FirstOrDefault())
+                    authResult = await app.AcquireTokenInteractive(scopes).WithAccount(accounts.FirstOrDefault())
                         .WithParentActivityOrWindow(new WindowInteropHelper(this)
                             .Handle) // optional, used to center the browser on the window
-                        .WithPrompt(Prompt.SelectAccount)
-                        .ExecuteAsync();
+                        .WithPrompt(Prompt.SelectAccount).ExecuteAsync();
                 }
                 catch (MsalException msalex)
                 {
-                    ResultText.Text = $"Error Acquiring Token:{Environment.NewLine}{msalex}";
+                    // Erro ao adquirir Token
+                    MessageBox.Show("Erro ao adquirir Token: " + msalex);
+                    // ResultText.Text = $"Error Acquiring Token:{Environment.NewLine}{msalex}";
                 }
             }
             catch (Exception ex)
             {
-                ResultText.Text = $"Error Acquiring Token Silently:{Environment.NewLine}{ex}";
+                // Erro ao adquirir Token Silenciosamente
+                MessageBox.Show("Erro ao adquirir Token Silenciosamente: " + ex);
+                // ResultText.Text = $"Error Acquiring Token Silently:{Environment.NewLine}{ex}";
                 return;
             }
 
             if (authResult != null)
             {
-                ResultText.Text = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
-                DisplayBasicTokenInfo(authResult);
+                TextBlockUtilizadorLogado.Text = "";
+                TextBlockUtilizadorLogado.Text +=
+                    await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken) + " (" +
+                    authResult.Account.Username + ")";
                 EntrarPanel.Visibility = Visibility.Collapsed;
                 ChatPanel.Visibility = Visibility.Visible;
-                // this.SignOutButton.Visibility = Visibility.Visible;
             }
         }
 
@@ -102,7 +132,8 @@ namespace WPFFrontendChatClient.View
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
                 response = await httpClient.SendAsync(request);
                 var content = await response.Content.ReadAsStringAsync();
-                return content;
+                JObject contentJObject = JObject.Parse(content);
+                return (string) contentJObject["givenName"] + " " + (string) contentJObject["surname"];
             }
             catch (Exception ex)
             {
@@ -126,21 +157,22 @@ namespace WPFFrontendChatClient.View
                 }
                 catch (MsalException ex)
                 {
-                    ResultText.Text = $"Error signing-out user: {ex.Message}";
+                    // Erro ao Sair
+                    MessageBox.Show("Erro ao Terminar Sessão: " + ex.Message);
+                    // ResultText.Text = $"Error signing-out user: {ex.Message}";
                 }
             }
         }
 
         /// <summary>
-        /// Display basic information contained in the token
+        /// Procedimento de TESTE para ver se o funcionamento de adição de Utilizadores dinamicamente funciona
         /// </summary>
-        private void DisplayBasicTokenInfo(AuthenticationResult authResult)
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void AdicionarUtilizadorTeste_OnClick(object sender, RoutedEventArgs e)
         {
-            TextBlockUtilizadorLogado.Text = "";
-            if (authResult != null)
-            {
-                TextBlockUtilizadorLogado.Text += authResult.Account.Username;
-            }
+            alunos.Add(new Aluno() {Nome = "Nome Apelido " + ++numAlunosTeste});
+            UsersItemsControl.ItemsSource = alunos;
         }
     }
 }
