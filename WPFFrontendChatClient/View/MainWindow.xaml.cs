@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Interop;
 using CommonServiceLocator;
 using Microsoft.Identity.Client;
@@ -29,10 +31,14 @@ namespace WPFFrontendChatClient.View
         string[] scopes = {"user.read"};
 
         // VARIÁVEIS DE TESTES (TEMPORÁRIAS)
-        ObservableCollection<Aluno> alunos;
-        ObservableCollection<Aula> aulas;
+        private ObservableCollection<Aluno> _alunos;
+        private ObservableCollection<Aula> _aulas;
+        private ObservableCollection<Mensagem> _mensagens;
 
-        int numAlunosTeste;
+        private string _nomeUtilizadorLogado;
+        private string _emailUtilizadorLogado;
+
+        private int _numAlunosTeste;
         // FIM DE VARIÁVEIS DE TESTES (TEMPORÁRIAS)
 
         public MainWindow()
@@ -42,22 +48,39 @@ namespace WPFFrontendChatClient.View
                 Application.Current.Dispatcher;
 
             // ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
-            alunos = new ObservableCollection<Aluno>()
+            _alunos = new ObservableCollection<Aluno>()
             {
                 new Aluno() {Nome = "Nome Apelido 1"},
                 new Aluno() {Nome = "Nome Apelido 2"},
                 new Aluno() {Nome = "Nome Apelido 3"}
             };
-            numAlunosTeste = 3;
-            UsersItemsControl.ItemsSource = alunos;
+            _numAlunosTeste = 3;
 
-            aulas = new ObservableCollection<Aula>()
+            _aulas = new ObservableCollection<Aula>()
             {
                 new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "CD"}},
                 new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "AEDII"}},
                 new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "LPII"}}
             };
-            AulasItemsControl.ItemsSource = aulas;
+
+            _mensagens = new ObservableCollection<Mensagem>()
+            {
+                new Mensagem()
+                {
+                    Remetente = "a15310@alunos.ipca.pt", Destinatario = "a15314@alunos.ipca.pt", Conteudo = "MSG 1",
+                    DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "Hélder Carvalho"
+                },
+                new Mensagem()
+                {
+                    Remetente = "a15310@alunos.ipca.pt", Destinatario = "a15314@alunos.ipca.pt", Conteudo = "MSG 2",
+                    DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "Hélder Carvalho"
+                },
+                new Mensagem()
+                {
+                    Remetente = "a15314@alunos.ipca.pt", Destinatario = "a15310@alunos.ipca.pt", Conteudo = "MSG 3",
+                    DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "João Carvalho"
+                },
+            };
             // FIM DE ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
         }
 
@@ -110,8 +133,42 @@ namespace WPFFrontendChatClient.View
                 TextBlockUtilizadorLogado.Text +=
                     await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken) + " (" +
                     authResult.Account.Username + ")";
+                _emailUtilizadorLogado = authResult.Account.Username;
                 EntrarPanel.Visibility = Visibility.Collapsed;
                 ChatPanel.Visibility = Visibility.Visible;
+
+                // PREENCHER INTERFACE
+                UsersItemsControl.ItemsSource = _alunos;
+                AulasItemsControl.ItemsSource = _aulas;
+                foreach (Mensagem mensagem in _mensagens)
+                {
+                    TextBlock MensagemTextBlock = new TextBlock();
+                    MensagemTextBlock.FontSize = 15;
+                    Thickness thickness = MensagemTextBlock.Margin;
+                    thickness.Top = 10;
+                    MensagemTextBlock.Margin = thickness;
+                    if (_emailUtilizadorLogado == mensagem.Remetente)
+                    {
+                        MensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
+                            {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
+                    }
+                    else
+                    {
+                        MensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
+                            {FontWeight = FontWeights.Bold});
+                    }
+
+                    MensagemTextBlock.Inlines.Add(" " + mensagem.Conteudo);
+                    LobyChat.Children.Add(MensagemTextBlock);
+
+                    TextBlock DataHoraEnvioTextBlock = new TextBlock();
+                    DataHoraEnvioTextBlock.FontSize = 9;
+                    DataHoraEnvioTextBlock.Text = mensagem.DataHoraEnvio;
+                    LobyChat.Children.Add(DataHoraEnvioTextBlock);
+                }
+
+                LobyScrollViewer.ScrollToBottom();
+                // FIM PREENCHER INTERFACE
             }
         }
 
@@ -133,7 +190,7 @@ namespace WPFFrontendChatClient.View
                 response = await httpClient.SendAsync(request);
                 var content = await response.Content.ReadAsStringAsync();
                 JObject contentJObject = JObject.Parse(content);
-                return (string) contentJObject["givenName"] + " " + (string) contentJObject["surname"];
+                return _nomeUtilizadorLogado = contentJObject["givenName"] + " " + (string) contentJObject["surname"];
             }
             catch (Exception ex)
             {
@@ -165,14 +222,49 @@ namespace WPFFrontendChatClient.View
         }
 
         /// <summary>
+        /// Procedimento de TESTE para ver se o funcionamento de adição de Mensagens dinamicamente funciona
+        /// USAR QUANDO RECEBER CONEXÃO
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void EnviarMensagem_OnClick(object sender, RoutedEventArgs e)
+        {
+            TextBlock MensagemTextBlock = new TextBlock();
+            MensagemTextBlock.FontSize = 15;
+            Thickness thickness = MensagemTextBlock.Margin;
+            thickness.Top = 10;
+            MensagemTextBlock.Margin = thickness;
+            if (_emailUtilizadorLogado == "a15310@alunos.ipca.pt")
+            {
+                MensagemTextBlock.Inlines.Add(new Run(_nomeUtilizadorLogado + ":")
+                    {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
+            }
+            else
+            {
+                MensagemTextBlock.Inlines.Add(new Run("João Carvalho:") {FontWeight = FontWeights.Bold});
+            }
+
+            MensagemTextBlock.Inlines.Add(" " + TextBoxMensagem.Text);
+            LobyChat.Children.Add(MensagemTextBlock);
+
+            TextBlock DataHoraEnvioTextBlock = new TextBlock();
+            DataHoraEnvioTextBlock.FontSize = 9;
+            DataHoraEnvioTextBlock.Text = DateTime.Now.ToString("dd/MM/yy HH:mm");
+            LobyChat.Children.Add(DataHoraEnvioTextBlock);
+            LobyScrollViewer.ScrollToBottom();
+            TextBoxMensagem.Text = "";
+        }
+
+        /// <summary>
         /// Procedimento de TESTE para ver se o funcionamento de adição de Utilizadores dinamicamente funciona
+        /// USAR QUANDO RECEBER CONEXÃO
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void AdicionarUtilizadorTeste_OnClick(object sender, RoutedEventArgs e)
         {
-            alunos.Add(new Aluno() {Nome = "Nome Apelido " + ++numAlunosTeste});
-            UsersItemsControl.ItemsSource = alunos;
+            _alunos.Add(new Aluno() {Nome = "Nome Apelido " + ++_numAlunosTeste});
+            UsersItemsControl.ItemsSource = _alunos;
         }
     }
 }

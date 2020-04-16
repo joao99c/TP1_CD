@@ -70,8 +70,11 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock x:Name="TextBlockUtilizadorLogado" Grid.Column="0" VerticalAlignment="Center"
-                           FontWeight="Bold" />
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Click="AdicionarUtilizadorTeste_OnClick" Content="Adicionar Utilizador (Teste)"
+                            HorizontalAlignment="Left" Margin="0,0,5,0" />
+                    <TextBlock x:Name="TextBlockUtilizadorLogado" VerticalAlignment="Center" FontWeight="Bold" />
+                </StackPanel>
                 <Button Click="ButtonSair_Click" Content="🚪" Grid.Column="1" FontSize="15" Background="Transparent"
                         BorderThickness="0" Margin="10,0,0,0" />
             </Grid>
@@ -80,24 +83,35 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox Name="TextBoxMensagem" Grid.Column="0" Height="Auto" MaxHeight="50" AcceptsReturn="True"
+                <TextBox x:Name="TextBoxMensagem" Grid.Column="0" Height="Auto" MaxHeight="50" AcceptsReturn="True"
                          SpellCheck.IsEnabled="True" Language="pt-PT" TextWrapping="Wrap" HorizontalAlignment="Stretch"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
-                <Button Name="ButtonEnviar" Content="Enviar" Grid.Column="1" ClickMode="Press" Margin="10,0,0,0"
-                        Width="50" HorizontalAlignment="Left" />
+                <Button Name="ButtonEnviar" Content="Enviar" Grid.Column="1" Click="EnviarMensagem_OnClick"
+                        Margin="10,0,0,0" Padding="15,0,15,0" HorizontalAlignment="Left" />
             </Grid>
-            <StackPanel Margin="10,0,10,0" VerticalAlignment="Bottom">
-
-
-                <Label Content="ZONA DE TESTES" Margin="0,0,0,-5" FontFamily="Segoe Ui" FontWeight="Bold"
-                       VerticalAlignment="Center" />
-                <Button Click="AdicionarUtilizadorTeste_OnClick" Content="Adicionar Utilizador (Teste)" />
-
-
-                <TextBlock Foreground="Black" FontSize="15" Text="MSG 1" />
-                <TextBlock HorizontalAlignment="Right" Foreground="Black" FontSize="15" Text="MSG 2" />
-                <TextBlock Foreground="Black" FontSize="15" Text="MSG 3" />
-            </StackPanel>
+            <TabControl Margin="10,0,10,0">
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Loby" FontWeight="Bold" />
+                    </TabItem.Header>
+                    <ScrollViewer x:Name="LobyScrollViewer" VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Auto">
+                        <Grid>
+                            <ItemsControl VerticalAlignment="Bottom">
+                                <Grid Margin="5,0,5,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel x:Name="LobyChat" Grid.Column="0" HorizontalAlignment="Right"
+                                                Orientation="Vertical" />
+                                </Grid>
+                            </ItemsControl>
+                        </Grid>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
         </DockPanel>
     </Grid>
 </Window>
