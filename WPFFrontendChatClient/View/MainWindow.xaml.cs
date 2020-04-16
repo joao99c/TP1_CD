@@ -9,10 +9,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Interop;
+using ClassLibrary;
 using CommonServiceLocator;
 using Microsoft.Identity.Client;
 using Models;
 using Newtonsoft.Json.Linq;
+using WPFFrontendChatClient.Service;
 using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.View
@@ -136,6 +138,23 @@ namespace WPFFrontendChatClient.View
                 _emailUtilizadorLogado = authResult.Account.Username;
                 EntrarPanel.Visibility = Visibility.Collapsed;
                 ChatPanel.Visibility = Visibility.Visible;
+
+                if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
+                {
+                    Aluno a1 = new Aluno();
+                    a1.Nome = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
+                    a1.Email = authResult.Account.Username;
+                    
+                    ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(a1);
+                }
+                else
+                {
+                    Professor p1 = new Professor();
+                    p1.Nome = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
+                    p1.Email = authResult.Account.Username;
+                    
+                    ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(p1);
+                }
 
                 // PREENCHER INTERFACE
                 UsersItemsControl.ItemsSource = _alunos;

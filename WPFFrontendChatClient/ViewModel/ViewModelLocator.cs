@@ -5,6 +5,7 @@
 
 using CommonServiceLocator;
 using GalaSoft.MvvmLight.Ioc;
+using WPFFrontendChatClient.Service;
 
 namespace WPFFrontendChatClient.ViewModel
 {
@@ -33,11 +34,20 @@ namespace WPFFrontendChatClient.ViewModel
             ////}
 
             SimpleIoc.Default.Register<MainViewModel>();
+            SimpleIoc.Default.Register<ServerConnectService>();
         }
 
         public MainViewModel Main
         {
             get { return ServiceLocator.Current.GetInstance<MainViewModel>(); }
+        }
+        
+        public ServerConnectService ServerConnect
+        {
+            get
+            {
+                return ServiceLocator.Current.GetInstance<ServerConnectService>();
+            }
         }
 
         public static void Cleanup()

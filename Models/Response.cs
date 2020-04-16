@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net.Sockets;
 using System.Text;
+using Models;
 
 namespace ClassLibrary
 {
@@ -9,22 +10,24 @@ namespace ClassLibrary
     {
         public enum Operation
         {
+            Login,
             EntrarChat,
-            SairChat,
-            EnviarMensagem,
-
-            GetUtilizador
+            LeaveChat,
+            SendMessage,
+            GetUser,
+            NewUserOnline
             // ....
         }
 
         public Operation Op { get; set; }
-        public string Msg { get; set; }
+        public Mensagem Msg { get; set; }
+        
         public T User { get; set; }
 
-        public Response(Operation op, T user, string msg = null)
+        public Response(Operation op, T user, Mensagem msg=null)
         {
             Op = op;
-            Msg = op.ToString();
+            Msg = msg;
             User = user;
             switch (op)
             {
@@ -32,16 +35,16 @@ namespace ClassLibrary
                 {
                     break;
                 }
-                case Operation.SairChat:
+                case Operation.LeaveChat:
                 {
                     break;
                 }
-                case Operation.EnviarMensagem:
+                case Operation.SendMessage:
                 {
                     Msg = msg;
                     break;
                 }
-                case Operation.GetUtilizador:
+                case Operation.GetUser:
                 {
                     Msg = msg;
                     break;
@@ -49,7 +52,7 @@ namespace ClassLibrary
             }
         }
 
-        public static void sendStringMessage(NetworkStream ns, string msg)
+        public static void SendStringMessage(NetworkStream ns, string msg)
         {
             ns.Write(Encoding.UTF8.GetBytes(msg), 0, Encoding.Unicode.GetBytes(msg).Length);
         }
