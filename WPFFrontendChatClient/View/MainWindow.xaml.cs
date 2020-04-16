@@ -7,11 +7,14 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
+using ClassLibrary;
 using CommonServiceLocator;
 using Microsoft.Identity.Client;
 using Models;
 using Newtonsoft.Json.Linq;
+using WPFFrontendChatClient.Service;
 using WPFFrontendChatClient.ViewModel;
+
 
 namespace WPFFrontendChatClient.View
 {
@@ -33,7 +36,9 @@ namespace WPFFrontendChatClient.View
         ObservableCollection<Aula> aulas;
 
         int numAlunosTeste;
+
         // FIM DE VARIÁVEIS DE TESTES (TEMPORÁRIAS)
+        private char tipoUtilizador; // a = aluno // p = professor
 
         public MainWindow()
         {
@@ -112,8 +117,26 @@ namespace WPFFrontendChatClient.View
                     authResult.Account.Username + ")";
                 EntrarPanel.Visibility = Visibility.Collapsed;
                 ChatPanel.Visibility = Visibility.Visible;
+
+                if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
+                {
+                    Aluno a1 = new Aluno();
+                    a1.Nome = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
+                    a1.Email = authResult.Account.Username;
+                    
+                    ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(a1);
+                }
+                else
+                {
+                    Professor p1 = new Professor();
+                    p1.Nome = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
+                    p1.Email = authResult.Account.Username;
+                    
+                    ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(p1);
+                }
             }
         }
+
 
         /// <summary>
         /// Perform an HTTP GET request to a URL using an HTTP Authorization header
@@ -124,8 +147,10 @@ namespace WPFFrontendChatClient.View
         public async Task<string> GetHttpContentWithToken(string url, string token)
         {
             var httpClient = new HttpClient();
+
             HttpResponseMessage response;
             try
+
             {
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 //Add the token in Authorization header
@@ -171,7 +196,11 @@ namespace WPFFrontendChatClient.View
         /// <param name="e"></param>
         private void AdicionarUtilizadorTeste_OnClick(object sender, RoutedEventArgs e)
         {
-            alunos.Add(new Aluno() {Nome = "Nome Apelido " + ++numAlunosTeste});
+            alunos.Add(new Aluno()
+            {
+                Nome = "Nome Apelido " + ++numAlunosTeste
+            });
+
             UsersItemsControl.ItemsSource = alunos;
         }
     }

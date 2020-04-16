@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -26,16 +28,17 @@ namespace ChatServer
             public Thread ConnectionThread { get; private set; }
             public Thread MessageThread { get; private set; }
             public NetworkStream NetStream { get; set; }
-            public Utilizador[] RegistedUtilizadors { get; set; }
+            public List<Utilizador> connectedClients { get; set; }
 
             public Server(int port)
             {
                 Port = port;
-                TcpListener = new TcpListener(IPAddress.Loopback, port);
+                TcpListener = new TcpListener(IPAddress.Parse("192.168.1.4"), port);
             }
 
             public void Start()
             {
+                this.connectedClients = new List<Utilizador>();
                 TcpListener.Start();
                 Console.WriteLine("Waiting for a connection... ");
                 Running = true;
@@ -58,29 +61,61 @@ namespace ChatServer
                 {
                     ConnectedTcpClient = TcpListener.AcceptTcpClient();
                     Console.WriteLine("Connected!");
-
-                    // Ask username and email
+                    
+                    // Login user and Start communciations
                     Response<Aluno> _Response = Helpers.receiveSerializedMessage<Response<Aluno>>(ConnectedTcpClient);
-
-                    // Check if user or email using the email
-                    if (!_Response.User.Email.Contains("alunos"))
+                    if (_Response.Op == Response<Aluno>.Operation.Login)
                     {
-                        Console.WriteLine("Professor");
-                        // Return da class do utilizador ou de um novo utilizador
-                        Professor prof = LogOrSignInUtilizador<Professor>(_Response.User.Nome);
-                        Helpers.sendSerializedMessage(ConnectedTcpClient, prof);
-                        MessageThread = new Thread(MessageHandler<Professor>);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Aluno");
-                        // Return da class do utilizador ou de um novo utilizador
-                        Aluno aluno = LogOrSignInUtilizador<Aluno>(_Response.User.Nome);
-                        Helpers.sendSerializedMessage(ConnectedTcpClient, aluno);
-                        MessageThread = new Thread(MessageHandler<Aluno>);
-                    }
+                        // Check if user or email using the email
+                        if (!_Response.User.Email.Contains("alunos"))
+                        {
+                            Aluno alunoRecebido = new Aluno(_Response.User);
+                            alunoRecebido.TcpClient = ConnectedTcpClient;
+                            
+                            Console.WriteLine("Professor");
+                            MessageThread = new Thread(MessageHandler<Professor>);
+                            // New user online
+                            addNewUserOnline(alunoRecebido);
+                        }
+                        else
+                        {
+                            Professor profRecebido = new Professor(_Response.User);
+                            profRecebido.TcpClient = ConnectedTcpClient;
+                            Console.WriteLine("Aluno");
+                            MessageThread = new Thread(MessageHandler<Aluno>);
+                            // New user online
+                            addNewUserOnline(profRecebido);
+                        }
 
-                    MessageThread.Start();
+                        MessageThread.Start();
+                    }
+                    
+                    
+                }
+            }
+
+            private void addNewUserOnline<T>(T responseUser) where T : Utilizador
+            {
+                Utilizador searchedUser = null;
+                connectedClients.ForEach(x =>
+                {
+                    if (x.Email == responseUser.Email)
+                    {
+                        // Encontrei!
+                        Console.WriteLine("O " + x.Nome + " já estava online!");
+                        searchedUser = x;
+                    }
+                });
+
+                if (searchedUser == null)
+                {
+                    connectedClients.ForEach(x =>
+                    {
+                        Response<T> res = new Response<T>(Response<T>.Operation.NewUserOnline, responseUser); 
+                        Helpers.sendSerializedMessage(x.TcpClient, res);
+                    });
+                    connectedClients.Add(responseUser);
+                    Console.WriteLine("O " + responseUser.Nome + " está agora online!");
                 }
             }
 
@@ -95,28 +130,13 @@ namespace ChatServer
                         case Response<T>.Operation.EntrarChat:
                             Console.WriteLine("EntrarChat");
                             break;
-                        case Response<T>.Operation.EnviarMensagem: break;
-                        case Response<T>.Operation.SairChat: break;
+                        case Response<T>.Operation.SendMessage: break;
+                        case Response<T>.Operation.LeaveChat: break;
+
                     }
 
                     response = null;
                 }
-            }
-
-            private T LogOrSignInUtilizador<T>(string nome) where T : Utilizador, new()
-            {
-                if (RegistedUtilizadors != null)
-                {
-                    foreach (T user in RegistedUtilizadors)
-                    {
-                        if (user.Nome == nome)
-                        {
-                            return user;
-                        }
-                    }
-                }
-
-                return new T {Nome = nome};
             }
         }
     }

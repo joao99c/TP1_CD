@@ -46,6 +46,7 @@
     <ItemGroup>
         <Compile Include="Aluno.cs" />
         <Compile Include="Aula.cs" />
+        <Compile Include="Mensagem.cs" />
         <Compile Include="Response.cs" />
         <Compile Include="Curso.cs" />
         <Compile Include="Helpers.cs" />

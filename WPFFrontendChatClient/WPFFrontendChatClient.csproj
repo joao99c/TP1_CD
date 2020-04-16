@@ -88,6 +88,7 @@
             <DependentUpon>App.xaml</DependentUpon>
             <SubType>Code</SubType>
         </Compile>
+        <Compile Include="Service\ServerConnectService.cs" />
         <Compile Include="TokenCacheHelper.cs" />
         <Compile Include="ViewModel\MainViewModel.cs" />
         <Compile Include="ViewModel\ViewModelLocator.cs" />
@@ -125,9 +126,6 @@
         <Generator>MSBuild:Compile</Generator>
         <SubType>Designer</SubType>
       </Page>
-    </ItemGroup>
-    <ItemGroup>
-      <Folder Include="Service" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
