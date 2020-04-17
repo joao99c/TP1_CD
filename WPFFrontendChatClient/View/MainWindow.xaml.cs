@@ -247,16 +247,8 @@ namespace WPFFrontendChatClient.View
             Thickness thickness = MensagemTextBlock.Margin;
             thickness.Top = 10;
             MensagemTextBlock.Margin = thickness;
-            if (_emailUtilizadorLogado == "a15310@alunos.ipca.pt")
-            {
-                MensagemTextBlock.Inlines.Add(new Run(_nomeUtilizadorLogado + ":")
-                    {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
-            }
-            else
-            {
-                MensagemTextBlock.Inlines.Add(new Run("João Carvalho:") {FontWeight = FontWeights.Bold});
-            }
-
+            MensagemTextBlock.Inlines.Add(new Run(_nomeUtilizadorLogado + ":")
+                {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
             MensagemTextBlock.Inlines.Add(" " + TextBoxMensagem.Text);
             LobyChat.Children.Add(MensagemTextBlock);
 
