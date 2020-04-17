@@ -1,9 +1,7 @@
-using System.Net;
 using System.Threading;
 using System.Windows.Threading;
 using CommonServiceLocator;
 using GalaSoft.MvvmLight;
-using Models;
 using WPFFrontendChatClient.Service;
 
 namespace WPFFrontendChatClient.ViewModel
@@ -37,16 +35,20 @@ namespace WPFFrontendChatClient.ViewModel
             ////}
         }
 
-        public void ConnectAction<T>(T user)
+        /// <summary>
+        /// Ação de conexão de utilizador
+        /// </summary>
+        /// <param name="utilizador">Utilizador a conectar</param>
+        /// <typeparam name="T">Tipo de Utilizador</typeparam>
+        public void ConnectAction<T>(T utilizador)
         {
             ServerConnectService networkService = ServiceLocator.Current.GetInstance<ServerConnectService>();
             networkService.IpAddress = "192.168.1.4";
             networkService.Port = int.Parse("1000");
-            Thread networkServiceThread = new Thread(() => networkService.Start(user));
+            Thread networkServiceThread = new Thread(() => networkService.Start(utilizador));
             networkServiceThread.Start();
         }
-        
+
         public Dispatcher MainDispatcher { get; set; }
-        
     }
 }

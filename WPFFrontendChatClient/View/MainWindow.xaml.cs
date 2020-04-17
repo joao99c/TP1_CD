@@ -9,12 +9,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Interop;
-using ClassLibrary;
 using CommonServiceLocator;
 using Microsoft.Identity.Client;
 using Models;
 using Newtonsoft.Json.Linq;
-using WPFFrontendChatClient.Service;
 using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.View
@@ -46,8 +44,7 @@ namespace WPFFrontendChatClient.View
         public MainWindow()
         {
             InitializeComponent();
-            ServiceLocator.Current.GetInstance<MainViewModel>().MainDispatcher =
-                Application.Current.Dispatcher;
+            ServiceLocator.Current.GetInstance<MainViewModel>().MainDispatcher = Application.Current.Dispatcher;
 
             // ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
             _alunos = new ObservableCollection<Aluno>()
@@ -89,6 +86,8 @@ namespace WPFFrontendChatClient.View
         /// <summary>
         /// Call AcquireToken - to acquire a token requiring user to sign-in
         /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void ButtonEntrar_Click(object sender, RoutedEventArgs e)
         {
             AuthenticationResult authResult = null;
@@ -131,28 +130,21 @@ namespace WPFFrontendChatClient.View
 
             if (authResult != null)
             {
-                TextBlockUtilizadorLogado.Text = "";
-                TextBlockUtilizadorLogado.Text +=
-                    await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken) + " (" +
-                    authResult.Account.Username + ")";
+                string nomeTemp = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
                 _emailUtilizadorLogado = authResult.Account.Username;
+                TextBlockUtilizadorLogado.Text = "";
+                TextBlockUtilizadorLogado.Text += nomeTemp + " (" + _emailUtilizadorLogado + ")";
                 EntrarPanel.Visibility = Visibility.Collapsed;
                 ChatPanel.Visibility = Visibility.Visible;
 
                 if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
                 {
-                    Aluno a1 = new Aluno();
-                    a1.Nome = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
-                    a1.Email = authResult.Account.Username;
-                    
+                    Aluno a1 = new Aluno() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
                     ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(a1);
                 }
                 else
                 {
-                    Professor p1 = new Professor();
-                    p1.Nome = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
-                    p1.Email = authResult.Account.Username;
-                    
+                    Professor p1 = new Professor() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
                     ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(p1);
                 }
 
@@ -196,7 +188,7 @@ namespace WPFFrontendChatClient.View
         /// </summary>
         /// <param name="url">The URL</param>
         /// <param name="token">The token</param>
-        /// <returns>String containing the results of the GET operation</returns>
+        /// <returns>First and Last Name of the received User</returns>
         public async Task<string> GetHttpContentWithToken(string url, string token)
         {
             var httpClient = new HttpClient();
@@ -220,6 +212,8 @@ namespace WPFFrontendChatClient.View
         /// <summary>
         /// Sign out the current user
         /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private async void ButtonSair_Click(object sender, RoutedEventArgs e)
         {
             var accounts = await App.PublicClientApp.GetAccountsAsync();
