@@ -2,7 +2,9 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Windows;
 using ClassLibrary;
+using Models;
 
 namespace WPFFrontendChatClient.Service
 {
@@ -24,11 +26,24 @@ namespace WPFFrontendChatClient.Service
         /// <typeparam name="T">Tipo de Utilizador</typeparam>
         public void Start<T>(T utilizador)
         {
-            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+            //Local
+            _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            
+            //Router Helder
+            // _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+            
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipEndPoint);
             Response<T> response = new Response<T>(Response<T>.Operation.Login, utilizador);
             Helpers.sendSerializedMessage(_tcpClient, response);
+            
+            // Thread userListAutoRefresh = new Thread ( ( ) =>
+            // {
+            //     getOnlineUsers(utilizador);
+            // } );
+            //
+            // userListAutoRefresh.Start ( );
+
         }
 
 
@@ -57,6 +72,19 @@ namespace WPFFrontendChatClient.Service
                         throw ex; // any serious error occurr
                 }
             } while (received < size);
+        }
+
+        public T getOnlineUsers<T>(T type)
+        {
+            while (true) 
+            {
+                if (_tcpClient != null)
+                {
+                    Response<T> response = Helpers.receiveSerializedMessage<Response<T>>(_tcpClient);
+                    MessageBox.Show("// GET ONLINE USERS: " + response.Op);
+                    return response.User;
+                }
+            }
         }
     }
 }
