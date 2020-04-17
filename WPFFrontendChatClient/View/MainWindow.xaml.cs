@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,6 +14,7 @@ using CommonServiceLocator;
 using Microsoft.Identity.Client;
 using Models;
 using Newtonsoft.Json.Linq;
+using WPFFrontendChatClient.Service;
 using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.View
@@ -32,6 +34,7 @@ namespace WPFFrontendChatClient.View
 
         // VARIÁVEIS DE TESTES (TEMPORÁRIAS)
         private ObservableCollection<Aluno> _alunos;
+        private ObservableCollection<Professor> _professors;
         private ObservableCollection<Aula> _aulas;
         private ObservableCollection<Mensagem> _mensagens;
 
@@ -49,9 +52,9 @@ namespace WPFFrontendChatClient.View
             // ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
             _alunos = new ObservableCollection<Aluno>()
             {
-                new Aluno() {Nome = "Nome Apelido 1"},
-                new Aluno() {Nome = "Nome Apelido 2"},
-                new Aluno() {Nome = "Nome Apelido 3"}
+                // new Aluno() {Nome = "Nome Apelido 1"},
+                // new Aluno() {Nome = "Nome Apelido 2"},
+                // new Aluno() {Nome = "Nome Apelido 3"}
             };
             _numAlunosTeste = 3;
 
@@ -137,16 +140,34 @@ namespace WPFFrontendChatClient.View
                 EntrarPanel.Visibility = Visibility.Collapsed;
                 ChatPanel.Visibility = Visibility.Visible;
 
+                Thread userListAutoRefresh;
                 if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
                 {
                     Aluno a1 = new Aluno() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
                     ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(a1);
+                    userListAutoRefresh = new Thread ( ( ) =>
+                    {
+                        a1 = ServiceLocator.Current.GetInstance<ServerConnectService>().getOnlineUsers(a1);
+                        
+                        // Fix Erro, collectionObservable só pode ser modificado dentro da sua thread 
+                        Application.Current.Dispatcher.Invoke(delegate {
+                            _alunos.Add(a1);
+                        });
+                    } );
+
                 }
                 else
                 {
                     Professor p1 = new Professor() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
                     ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(p1);
+                    userListAutoRefresh = new Thread ( ( ) =>
+                    {
+                        p1 = ServiceLocator.Current.GetInstance<ServerConnectService>().getOnlineUsers(p1);
+                        _professors.Add(p1);
+                    } );
+
                 }
+                userListAutoRefresh.Start ( );
 
                 // PREENCHER INTERFACE
                 UsersItemsControl.ItemsSource = _alunos;

@@ -1,6 +1,7 @@
 ﻿﻿using System.Net.Sockets;
 using System.Text;
-using Newtonsoft.Json;
+ using Models;
+ using Newtonsoft.Json;
 
 namespace ClassLibrary
 {

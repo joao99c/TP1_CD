@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -27,7 +27,7 @@ namespace ChatServer
             public Thread ConnectionThread { get; private set; }
             public Thread MessageThread { get; private set; }
             public NetworkStream NetStream { get; set; }
-            public List<Utilizador> connectedClients { get; set; }
+            public List<Cliente> connectedClients { get; set; }
 
             public Server(int port)
             {
@@ -37,7 +37,7 @@ namespace ChatServer
 
             public void Start()
             {
-                connectedClients = new List<Utilizador>();
+                connectedClients = new List<Cliente>();
                 TcpListener.Start();
                 Console.WriteLine("Waiting for a connection... ");
                 Running = true;
@@ -63,8 +63,8 @@ namespace ChatServer
                 {
                     ConnectedTcpClient = TcpListener.AcceptTcpClient();
                     Console.WriteLine("Connected!");
-
-                    // Login user and Start communications
+                    
+                    // Login user and Start communciations
                     Response<Aluno> _Response = Helpers.receiveSerializedMessage<Response<Aluno>>(ConnectedTcpClient);
                     if (_Response.Op == Response<Aluno>.Operation.Login)
                     {
@@ -72,7 +72,6 @@ namespace ChatServer
                         if (_Response.User.Email.Contains("alunos"))
                         {
                             Aluno alunoRecebido = new Aluno(_Response.User);
-                            alunoRecebido.TcpClient = ConnectedTcpClient;
                             Console.WriteLine("Aluno");
                             MessageThread = new Thread(MessageHandler<Aluno>);
                             // New user online
@@ -81,7 +80,6 @@ namespace ChatServer
                         else
                         {
                             Professor profRecebido = new Professor(_Response.User);
-                            profRecebido.TcpClient = ConnectedTcpClient;
                             Console.WriteLine("Professor");
                             MessageThread = new Thread(MessageHandler<Professor>);
                             // New user online
@@ -90,6 +88,8 @@ namespace ChatServer
 
                         MessageThread.Start();
                     }
+                    
+                    
                 }
             }
 
@@ -101,26 +101,33 @@ namespace ChatServer
             private void addNewUserOnline<T>(T utilizadorConectar) where T : Utilizador
             {
                 Utilizador utilizadorEncontrado = null;
+                
+                // Se for um tutilizador já logado
                 connectedClients.ForEach(utilizadorConectado =>
                 {
-                    if (utilizadorConectado.Email == utilizadorConectar.Email)
+                    if (utilizadorConectado.user.Email == utilizadorConectar.Email)
                     {
                         // Encontrei!
-                        Console.WriteLine("O " + utilizadorConectado.Nome + " já estava online!");
-                        utilizadorEncontrado = utilizadorConectado;
+                        Console.WriteLine("O " + utilizadorConectado.user.Nome + " já estava online!");
+                        utilizadorEncontrado = utilizadorConectado.user;
                     }
                 });
 
+                // Se for um utilizador novo
                 if (utilizadorEncontrado == null)
                 {
-                    connectedClients.ForEach(utilizadorConectado =>
+                    connectedClients.ForEach(x =>
                     {
-                        Response<T> response = new Response<T>(Response<T>.Operation.NewUserOnline, utilizadorConectar);
-                        Helpers.sendSerializedMessage(utilizadorConectado.TcpClient, response);
+                        Response<T> res = new Response<T>(Response<T>.Operation.NewUserOnline, utilizadorConectar);
+                        Helpers.sendSerializedMessage(ConnectedTcpClient, res);
+                        Console.WriteLine("Utilizadores Online enviados para " + x.TcpClient.Client);
                     });
-                    connectedClients.Add(utilizadorConectar);
+                    
+                    connectedClients.Add(new Cliente(utilizadorConectar, ConnectedTcpClient));
                     Console.WriteLine("O " + utilizadorConectar.Nome + " está agora online!");
                 }
+
+               
             }
 
             /// <summary>
