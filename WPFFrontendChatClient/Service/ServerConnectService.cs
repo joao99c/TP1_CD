@@ -1,15 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using ClassLibrary;
-using CommonServiceLocator;
-using Models;
-using Newtonsoft.Json;
-using WPFFrontendChatClient.ViewModel;
-
 
 namespace WPFFrontendChatClient.Service
 {
@@ -24,9 +17,14 @@ namespace WPFFrontendChatClient.Service
         {
         }
 
+        /// <summary>
+        /// Inicia a conexão do Utilizador
+        /// </summary>
+        /// <param name="utilizador">Utilizador que vai iniciar conexão</param>
+        /// <typeparam name="T">Tipo de Utilizador</typeparam>
         public void Start<T>(T utilizador)
         {
-            _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipEndPoint);
             Response<T> response = new Response<T>(Response<T>.Operation.Login, utilizador);
