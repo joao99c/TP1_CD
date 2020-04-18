@@ -37,7 +37,7 @@ namespace WPFFrontendChatClient.ViewModel
             SimpleIoc.Default.Register<ServerConnectService>();
         }
 
-        public MainViewModel Main => ServiceLocator.Current.GetInstance<MainViewModel>();
+        public static MainViewModel Main => ServiceLocator.Current.GetInstance<MainViewModel>();
 
         public ServerConnectService ServerConnect => ServiceLocator.Current.GetInstance<ServerConnectService>();
 

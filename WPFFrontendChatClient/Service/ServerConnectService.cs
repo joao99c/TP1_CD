@@ -4,12 +4,15 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Windows;
 using ClassLibrary;
+using CommonServiceLocator;
 using Models;
+using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.Service
 {
     public class ServerConnectService
     {
+        private MainViewModel MainViewModel { get; set; }
         private TcpClient _tcpClient;
         private IPEndPoint _ipEndPoint;
         public string IpAddress { get; set; }
@@ -17,6 +20,7 @@ namespace WPFFrontendChatClient.Service
 
         public ServerConnectService()
         {
+            MainViewModel = ServiceLocator.Current.GetInstance<MainViewModel>();
         }
 
         /// <summary>
@@ -26,28 +30,17 @@ namespace WPFFrontendChatClient.Service
         /// <typeparam name="T">Tipo de Utilizador</typeparam>
         public void Start<T>(T utilizador)
         {
-            //Local
-            _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
-            
-            //Router Helder
-            // _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
-            
+            // _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipEndPoint);
             Response<T> response = new Response<T>(Response<T>.Operation.Login, utilizador);
             Helpers.sendSerializedMessage(_tcpClient, response);
-            
-            // Thread userListAutoRefresh = new Thread ( ( ) =>
-            // {
-            //     getOnlineUsers(utilizador);
-            // } );
-            //
-            // userListAutoRefresh.Start ( );
-
+            UpdaterAlunos();
         }
 
-
-        public static void Receive(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        private static void Receive(Socket socket, byte[] buffer, int offset, int size, int timeout)
         {
             int startTickCount = Environment.TickCount;
             int received = 0; // how many bytes is already received
@@ -74,17 +67,50 @@ namespace WPFFrontendChatClient.Service
             } while (received < size);
         }
 
-        public T getOnlineUsers<T>(T type)
+        /// <summary>
+        /// Obtém os Utilizadores Online (1 de cada vez)
+        /// </summary>
+        /// <typeparam name="T">Tipo de Utilizador que vai receber</typeparam>
+        /// <returns>Utilizador Online (Aluno ou Professor)</returns>
+        private T getOnlineUsers<T>() where T : Utilizador
         {
-            while (true) 
+            while (true)
             {
-                if (_tcpClient != null)
-                {
-                    Response<T> response = Helpers.receiveSerializedMessage<Response<T>>(_tcpClient);
-                    MessageBox.Show("// GET ONLINE USERS: " + response.Op);
-                    return response.User;
-                }
+                if (_tcpClient == null) continue;
+                Response<T> response = Helpers.receiveSerializedMessage<Response<T>>(_tcpClient);
+                return response.User;
             }
+        }
+
+        /// <summary>
+        /// Thread que fica à escuta de novos Alunos
+        /// <para>Assim que um Aluno se conectar ao servidor, este envia-o para ser adicionado à lista de Alunos Online</para>
+        /// </summary>
+        private void UpdaterAlunos()
+        {
+            Thread userListAutoRefresh = new Thread(() =>
+            {
+                while (true)
+                {
+                    Aluno novoAluno = getOnlineUsers<Aluno>();
+                    if (novoAluno != null)
+                    {
+                        Aluno aluno = novoAluno;
+                        Application.Current.Dispatcher?.Invoke(delegate { MainViewModel.AddAlunoLista(aluno); });
+                    }
+                }
+            });
+            userListAutoRefresh.Start();
+        }
+
+        /// <summary>
+        /// Envia a Mensagem para o servidor
+        /// </summary>
+        /// <param name="mensagem">Mensagem a enviar</param>
+        public void EnviarMensagem(Mensagem mensagem)
+        {
+            MessageBox.Show(mensagem.NomeRemetente + " - " + mensagem.Remetente + " - " + mensagem.Conteudo + " - " +
+                            mensagem.Destinatario + " - " + mensagem.DataHoraEnvio, "ServerConnectService");
         }
     }
 }

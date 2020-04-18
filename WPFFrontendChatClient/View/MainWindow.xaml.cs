@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,7 +13,6 @@ using CommonServiceLocator;
 using Microsoft.Identity.Client;
 using Models;
 using Newtonsoft.Json.Linq;
-using WPFFrontendChatClient.Service;
 using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.View
@@ -27,78 +25,38 @@ namespace WPFFrontendChatClient.View
         // Set the API Endpoint to Graph 'me' endpoint. 
         // To change from Microsoft public cloud to a national cloud, use another value of graphAPIEndpoint.
         // Reference with Graph endpoints here: https://docs.microsoft.com/graph/deployments#microsoft-graph-and-graph-explorer-service-root-endpoints
-        string graphAPIEndpoint = "https://graph.microsoft.com/v1.0/me";
+        private string graphAPIEndpoint = "https://graph.microsoft.com/v1.0/me";
 
         //Set the scope for API call to user.read
-        string[] scopes = {"user.read"};
+        private string[] scopes = {"user.read"};
 
-        // VARIÁVEIS DE TESTES (TEMPORÁRIAS)
-        private ObservableCollection<Aluno> _alunos;
-        private ObservableCollection<Professor> _professors;
-        private ObservableCollection<Aula> _aulas;
-        private ObservableCollection<Mensagem> _mensagens;
-
+        private MainViewModel MainViewModel { get; set; }
+        
         private string _nomeUtilizadorLogado;
         private string _emailUtilizadorLogado;
-
-        private int _numAlunosTeste;
-        // FIM DE VARIÁVEIS DE TESTES (TEMPORÁRIAS)
 
         public MainWindow()
         {
             InitializeComponent();
             ServiceLocator.Current.GetInstance<MainViewModel>().MainDispatcher = Application.Current.Dispatcher;
 
-            // ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
-            _alunos = new ObservableCollection<Aluno>()
-            {
-                // new Aluno() {Nome = "Nome Apelido 1"},
-                // new Aluno() {Nome = "Nome Apelido 2"},
-                // new Aluno() {Nome = "Nome Apelido 3"}
-            };
-            _numAlunosTeste = 3;
-
-            _aulas = new ObservableCollection<Aula>()
-            {
-                new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "CD"}},
-                new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "AEDII"}},
-                new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "LPII"}}
-            };
-
-            _mensagens = new ObservableCollection<Mensagem>()
-            {
-                new Mensagem()
-                {
-                    Remetente = "a15310@alunos.ipca.pt", Destinatario = "a15314@alunos.ipca.pt", Conteudo = "MSG 1",
-                    DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "Hélder Carvalho"
-                },
-                new Mensagem()
-                {
-                    Remetente = "a15310@alunos.ipca.pt", Destinatario = "a15314@alunos.ipca.pt", Conteudo = "MSG 2",
-                    DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "Hélder Carvalho"
-                },
-                new Mensagem()
-                {
-                    Remetente = "a15314@alunos.ipca.pt", Destinatario = "a15310@alunos.ipca.pt", Conteudo = "MSG 3",
-                    DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "João Carvalho"
-                },
-            };
-            // FIM DE ZONA DE TESTES (CÓDIGO TEMPORÁRIO)
+            DataContext = new MainViewModel();
+            MainViewModel = (MainViewModel) DataContext;
+            MainViewModel.AddMensagemEvent += DisplayMensagem;
         }
 
         /// <summary>
-        /// Call AcquireToken - to acquire a token requiring user to sign-in
+        /// Inicia sessão de um Utilizador
+        /// <para>Chama AcquireToken para obter o Token de inicio de sessão</para>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private async void ButtonEntrar_Click(object sender, RoutedEventArgs e)
         {
             AuthenticationResult authResult = null;
-            var app = App.PublicClientApp;
-
-            var accounts = await app.GetAccountsAsync();
-            var firstAccount = accounts.FirstOrDefault();
-
+            IPublicClientApplication app = App.PublicClientApp;
+            IEnumerable<IAccount> accounts = await app.GetAccountsAsync();
+            IAccount firstAccount = accounts.FirstOrDefault();
             try
             {
                 authResult = await app.AcquireTokenSilent(scopes, firstAccount).ExecuteAsync();
@@ -108,7 +66,6 @@ namespace WPFFrontendChatClient.View
                 // A MsalUiRequiredException happened on AcquireTokenSilent. 
                 // This indicates you need to call AcquireTokenInteractive to acquire a token
                 Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
-
                 try
                 {
                     authResult = await app.AcquireTokenInteractive(scopes).WithAccount(accounts.FirstOrDefault())
@@ -131,96 +88,42 @@ namespace WPFFrontendChatClient.View
                 return;
             }
 
-            if (authResult != null)
+            if (authResult == null) return;
+            string nomeTemp = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
+            _emailUtilizadorLogado = authResult.Account.Username;
+            TextBlockUtilizadorLogado.Text = "";
+            TextBlockUtilizadorLogado.Text += nomeTemp + " (" + _emailUtilizadorLogado + ")";
+            EntrarPanel.Visibility = Visibility.Collapsed;
+            ChatPanel.Visibility = Visibility.Visible;
+            if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
             {
-                string nomeTemp = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
-                _emailUtilizadorLogado = authResult.Account.Username;
-                TextBlockUtilizadorLogado.Text = "";
-                TextBlockUtilizadorLogado.Text += nomeTemp + " (" + _emailUtilizadorLogado + ")";
-                EntrarPanel.Visibility = Visibility.Collapsed;
-                ChatPanel.Visibility = Visibility.Visible;
+                Aluno a1 = new Aluno() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
+                MainViewModel.ConnectAction(a1);
+            }
+            else
+            {
+                Professor p1 = new Professor() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
+                MainViewModel.ConnectAction(p1);
 
-                Thread userListAutoRefresh;
-                if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
-                {
-                    Aluno a1 = new Aluno() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
-                    ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(a1);
-                    userListAutoRefresh = new Thread ( ( ) =>
-                    {
-                        a1 = ServiceLocator.Current.GetInstance<ServerConnectService>().getOnlineUsers(a1);
-                        
-                        // Fix Erro, collectionObservable só pode ser modificado dentro da sua thread 
-                        Application.Current.Dispatcher.Invoke(delegate {
-                            _alunos.Add(a1);
-                        });
-                    } );
-
-                }
-                else
-                {
-                    Professor p1 = new Professor() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
-                    ServiceLocator.Current.GetInstance<MainViewModel>().ConnectAction(p1);
-                    userListAutoRefresh = new Thread ( ( ) =>
-                    {
-                        p1 = ServiceLocator.Current.GetInstance<ServerConnectService>().getOnlineUsers(p1);
-                        _professors.Add(p1);
-                    } );
-
-                }
-                userListAutoRefresh.Start ( );
-
-                // PREENCHER INTERFACE
-                UsersItemsControl.ItemsSource = _alunos;
-                AulasItemsControl.ItemsSource = _aulas;
-                foreach (Mensagem mensagem in _mensagens)
-                {
-                    TextBlock MensagemTextBlock = new TextBlock();
-                    MensagemTextBlock.FontSize = 15;
-                    Thickness thickness = MensagemTextBlock.Margin;
-                    thickness.Top = 10;
-                    MensagemTextBlock.Margin = thickness;
-                    if (_emailUtilizadorLogado == mensagem.Remetente)
-                    {
-                        MensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
-                            {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
-                    }
-                    else
-                    {
-                        MensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
-                            {FontWeight = FontWeights.Bold});
-                    }
-
-                    MensagemTextBlock.Inlines.Add(" " + mensagem.Conteudo);
-                    LobyChat.Children.Add(MensagemTextBlock);
-
-                    TextBlock DataHoraEnvioTextBlock = new TextBlock();
-                    DataHoraEnvioTextBlock.FontSize = 9;
-                    DataHoraEnvioTextBlock.Text = mensagem.DataHoraEnvio;
-                    LobyChat.Children.Add(DataHoraEnvioTextBlock);
-                }
-
-                LobyScrollViewer.ScrollToBottom();
-                // FIM PREENCHER INTERFACE
+                // TODO: Fazer o mesmo para professores
             }
         }
 
         /// <summary>
-        /// Perform an HTTP GET request to a URL using an HTTP Authorization header
+        /// Realiza pedido HTTP GET para obter a informação relativa à conta que iniciou sessão
         /// </summary>
-        /// <param name="url">The URL</param>
-        /// <param name="token">The token</param>
-        /// <returns>First and Last Name of the received User</returns>
-        public async Task<string> GetHttpContentWithToken(string url, string token)
+        /// <param name="url">API URL</param>
+        /// <param name="token">Token de acesso</param>
+        /// <returns>Primeiro e último nome do Utilizador</returns>
+        private async Task<string> GetHttpContentWithToken(string url, string token)
         {
-            var httpClient = new HttpClient();
-            HttpResponseMessage response;
+            HttpClient httpClient = new HttpClient();
             try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                //Add the token in Authorization header
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                response = await httpClient.SendAsync(request);
-                var content = await response.Content.ReadAsStringAsync();
+                HttpResponseMessage response = await httpClient.SendAsync(request);
+                string content = await response.Content.ReadAsStringAsync();
                 JObject contentJObject = JObject.Parse(content);
                 return _nomeUtilizadorLogado = contentJObject["givenName"] + " " + (string) contentJObject["surname"];
             }
@@ -231,13 +134,13 @@ namespace WPFFrontendChatClient.View
         }
 
         /// <summary>
-        /// Sign out the current user
+        /// Faz Logout do Utilizador atual
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private async void ButtonSair_Click(object sender, RoutedEventArgs e)
         {
-            var accounts = await App.PublicClientApp.GetAccountsAsync();
+            IEnumerable<IAccount> accounts = await App.PublicClientApp.GetAccountsAsync();
             if (accounts.Any())
             {
                 try
@@ -256,41 +159,52 @@ namespace WPFFrontendChatClient.View
         }
 
         /// <summary>
-        /// Procedimento de TESTE para ver se o funcionamento de adição de Mensagens dinamicamente funciona
-        /// USAR QUANDO RECEBER CONEXÃO
+        /// Adiciona a Mensagem ao chat e envia-a para a MainViewModel
+        /// <para>TODO: Detetar o Destinatário</para>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void EnviarMensagem_OnClick(object sender, RoutedEventArgs e)
         {
-            TextBlock MensagemTextBlock = new TextBlock();
-            MensagemTextBlock.FontSize = 15;
-            Thickness thickness = MensagemTextBlock.Margin;
-            thickness.Top = 10;
-            MensagemTextBlock.Margin = thickness;
-            MensagemTextBlock.Inlines.Add(new Run(_nomeUtilizadorLogado + ":")
-                {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
-            MensagemTextBlock.Inlines.Add(" " + TextBoxMensagem.Text);
-            LobyChat.Children.Add(MensagemTextBlock);
-
-            TextBlock DataHoraEnvioTextBlock = new TextBlock();
-            DataHoraEnvioTextBlock.FontSize = 9;
-            DataHoraEnvioTextBlock.Text = DateTime.Now.ToString("dd/MM/yy HH:mm");
-            LobyChat.Children.Add(DataHoraEnvioTextBlock);
-            LobyScrollViewer.ScrollToBottom();
+            Mensagem mensagem = new Mensagem()
+            {
+                Conteudo = TextBoxMensagem.Text, DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"),
+                Destinatario = "loby", NomeRemetente = _nomeUtilizadorLogado, Remetente = _emailUtilizadorLogado
+            };
+            DisplayMensagem(mensagem);
+            MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
             TextBoxMensagem.Text = "";
         }
 
         /// <summary>
-        /// Procedimento de TESTE para ver se o funcionamento de adição de Utilizadores dinamicamente funciona
-        /// USAR QUANDO RECEBER CONEXÃO
+        /// Recebe uma Mensagem e cria os TextBlock's para colocar no chat
+        /// <para>TODO: Colocar a funcionar com vários separadores de chat dependendo do Destinatário</para>
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void AdicionarUtilizadorTeste_OnClick(object sender, RoutedEventArgs e)
+        /// <param name="mensagem">Mensagem a mostrar</param>
+        private void DisplayMensagem(Mensagem mensagem)
         {
-            _alunos.Add(new Aluno() {Nome = "Nome Apelido " + ++_numAlunosTeste});
-            UsersItemsControl.ItemsSource = _alunos;
+            TextBlock mensagemTextBlock = new TextBlock {FontSize = 15};
+            Thickness mensagemTextBlockThickness = mensagemTextBlock.Margin;
+            mensagemTextBlockThickness.Top = 10;
+            mensagemTextBlock.Margin = mensagemTextBlockThickness;
+            if (_emailUtilizadorLogado == mensagem.Remetente)
+            {
+                mensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
+                    {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
+            }
+            else
+            {
+                mensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
+                    {FontWeight = FontWeights.Bold});
+            }
+
+            mensagemTextBlock.Inlines.Add(" " + mensagem.Conteudo);
+            LobyChat.Children.Add(mensagemTextBlock);
+
+            TextBlock dataHoraEnvioTextBlock = new TextBlock {FontSize = 9, Text = mensagem.DataHoraEnvio};
+            LobyChat.Children.Add(dataHoraEnvioTextBlock);
+
+            LobyScrollViewer.ScrollToBottom();
         }
     }
 }

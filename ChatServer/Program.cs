@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -13,21 +13,19 @@ namespace ChatServer
     {
         public static void Main(string[] args)
         {
-            Server s = new Server(1000);
-            s.Start();
+            Server server = new Server(1000);
+            server.Start();
         }
 
-        public class Server
+        private class Server
         {
-            public int Port { get; set; }
-            public TcpListener TcpListener { get; set; }
-            public bool Running { get; private set; }
-            public TcpClient ConnectedTcpClient { get; private set; }
-            public BinaryFormatter BFormatter { get; set; }
-            public Thread ConnectionThread { get; private set; }
-            public Thread MessageThread { get; private set; }
-            public NetworkStream NetStream { get; set; }
-            public List<Cliente> connectedClients { get; set; }
+            private int Port { get; set; }
+            private TcpListener TcpListener { get; set; }
+            private bool Running { get; set; }
+            private TcpClient ConnectedTcpClient { get; set; }
+            private Thread ConnectionThread { get; set; }
+            private Thread MessageThread { get; set; }
+            private List<Cliente> ClientesConectados { get; set; }
 
             public Server(int port)
             {
@@ -37,7 +35,7 @@ namespace ChatServer
 
             public void Start()
             {
-                connectedClients = new List<Cliente>();
+                ClientesConectados = new List<Cliente>();
                 TcpListener.Start();
                 Console.WriteLine("Waiting for a connection... ");
                 Running = true;
@@ -47,11 +45,9 @@ namespace ChatServer
 
             public void Stop()
             {
-                if (Running)
-                {
-                    TcpListener.Stop();
-                    Running = false;
-                }
+                if (!Running) return;
+                TcpListener.Stop();
+                Running = false;
             }
 
             /// <summary>
@@ -63,33 +59,29 @@ namespace ChatServer
                 {
                     ConnectedTcpClient = TcpListener.AcceptTcpClient();
                     Console.WriteLine("Connected!");
-                    
-                    // Login user and Start communciations
-                    Response<Aluno> _Response = Helpers.receiveSerializedMessage<Response<Aluno>>(ConnectedTcpClient);
-                    if (_Response.Op == Response<Aluno>.Operation.Login)
-                    {
-                        // Check if user or email using the email
-                        if (_Response.User.Email.Contains("alunos"))
-                        {
-                            Aluno alunoRecebido = new Aluno(_Response.User);
-                            Console.WriteLine("Aluno");
-                            MessageThread = new Thread(MessageHandler<Aluno>);
-                            // New user online
-                            addNewUserOnline(alunoRecebido);
-                        }
-                        else
-                        {
-                            Professor profRecebido = new Professor(_Response.User);
-                            Console.WriteLine("Professor");
-                            MessageThread = new Thread(MessageHandler<Professor>);
-                            // New user online
-                            addNewUserOnline(profRecebido);
-                        }
 
-                        MessageThread.Start();
+                    // Login user and Start communications
+                    Response<Aluno> response = Helpers.receiveSerializedMessage<Response<Aluno>>(ConnectedTcpClient);
+                    if (response.Op != Response<Aluno>.Operation.Login) continue;
+                    // Check if user or email using the email
+                    if (response.User.Email.Contains("alunos"))
+                    {
+                        Aluno alunoRecebido = new Aluno(response.User);
+                        Console.WriteLine("Aluno");
+                        MessageThread = new Thread(MessageHandler<Aluno>);
+                        // New user online
+                        addNewUserOnline(alunoRecebido);
                     }
-                    
-                    
+                    else
+                    {
+                        Professor profRecebido = new Professor(response.User);
+                        Console.WriteLine("Professor");
+                        MessageThread = new Thread(MessageHandler<Professor>);
+                        // New user online
+                        addNewUserOnline(profRecebido);
+                    }
+
+                    MessageThread.Start();
                 }
             }
 
@@ -101,33 +93,32 @@ namespace ChatServer
             private void addNewUserOnline<T>(T utilizadorConectar) where T : Utilizador
             {
                 Utilizador utilizadorEncontrado = null;
-                
-                // Se for um tutilizador já logado
-                connectedClients.ForEach(utilizadorConectado =>
+
+                // Se for um cliente já conectado
+                ClientesConectados.ForEach(clienteConectado =>
                 {
-                    if (utilizadorConectado.user.Email == utilizadorConectar.Email)
-                    {
-                        // Encontrei!
-                        Console.WriteLine("O " + utilizadorConectado.user.Nome + " já estava online!");
-                        utilizadorEncontrado = utilizadorConectado.user;
-                    }
+                    if (clienteConectado.user.Email != utilizadorConectar.Email) return;
+                    // Encontrei!
+                    Console.WriteLine("O " + clienteConectado.user.Nome + " já estava online!");
+                    utilizadorEncontrado = clienteConectado.user;
                 });
 
                 // Se for um utilizador novo
-                if (utilizadorEncontrado == null)
-                {
-                    connectedClients.ForEach(x =>
-                    {
-                        Response<T> res = new Response<T>(Response<T>.Operation.NewUserOnline, utilizadorConectar);
-                        Helpers.sendSerializedMessage(ConnectedTcpClient, res);
-                        Console.WriteLine("Utilizadores Online enviados para " + x.TcpClient.Client);
-                    });
-                    
-                    connectedClients.Add(new Cliente(utilizadorConectar, ConnectedTcpClient));
-                    Console.WriteLine("O " + utilizadorConectar.Nome + " está agora online!");
-                }
+                if (utilizadorEncontrado != null) return;
+                /*
+                 * TODO: Verificar se os utilizadores estão realmente a ser enviados em duas ocasiões:
+                 * TODO: - Quando um novo utilizador entra todos os outros têm de o receber (acho que sim)
+                 * TODO: - Quando um novo utilizador entra esse novo tem de receber todos os que já estavam online
+                 */
 
-               
+                ClientesConectados.ForEach(clienteConectado =>
+                {
+                    Response<T> response = new Response<T>(Response<T>.Operation.NewUserOnline, utilizadorConectar);
+                    Helpers.sendSerializedMessage(clienteConectado.TcpClient, response);
+                    Console.WriteLine("Novo Utilizador Online enviado!");
+                });
+                ClientesConectados.Add(new Cliente(utilizadorConectar, ConnectedTcpClient));
+                Console.WriteLine("O " + utilizadorConectar.Nome + " está agora online!");
             }
 
             /// <summary>
@@ -157,9 +148,19 @@ namespace ChatServer
                         {
                             break;
                         }
+                        case Response<T>.Operation.Login:
+                        {
+                            break;
+                        }
+                        case Response<T>.Operation.GetUser:
+                        {
+                            break;
+                        }
+                        case Response<T>.Operation.NewUserOnline:
+                        {
+                            break;
+                        }
                     }
-
-                    response = null;
                 }
             }
         }

@@ -21,7 +21,7 @@
                     </TabItem.Header>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                         <Grid>
-                            <ItemsControl x:Name="AulasItemsControl">
+                            <ItemsControl ItemsSource="{Binding Aulas}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -46,7 +46,7 @@
                     </TabItem.Header>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                         <Grid>
-                            <ItemsControl x:Name="UsersItemsControl">
+                            <ItemsControl ItemsSource="{Binding Alunos}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid>
@@ -71,7 +71,9 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Click="AdicionarUtilizadorTeste_OnClick" Content="Adicionar Utilizador (Teste)"
+                    <Button Command="{Binding AddAlunoTeste}" Content="Adicionar Utilizador (Teste)"
+                            HorizontalAlignment="Left" Margin="0,0,5,0" />
+                    <Button Command="{Binding AddMensagemTeste}" Content="Adicionar Mensagem (Teste)"
                             HorizontalAlignment="Left" Margin="0,0,5,0" />
                     <TextBlock x:Name="TextBlockUtilizadorLogado" VerticalAlignment="Center" FontWeight="Bold" />
                 </StackPanel>
@@ -86,8 +88,8 @@
                 <TextBox x:Name="TextBoxMensagem" Grid.Column="0" Height="Auto" MaxHeight="50" AcceptsReturn="True"
                          SpellCheck.IsEnabled="True" Language="pt-PT" TextWrapping="Wrap" HorizontalAlignment="Stretch"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
-                <Button Name="ButtonEnviar" Content="Enviar" Grid.Column="1" Click="EnviarMensagem_OnClick"
-                        Margin="10,0,0,0" Padding="15,0,15,0" HorizontalAlignment="Left" />
+                <Button Click="EnviarMensagem_OnClick" Content="Enviar" Grid.Column="1" Margin="10,0,0,0"
+                        Padding="15,0,15,0" HorizontalAlignment="Left" />
             </Grid>
             <TabControl Margin="10,0,10,0">
                 <TabItem>
