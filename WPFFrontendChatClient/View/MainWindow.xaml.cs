@@ -31,9 +31,8 @@ namespace WPFFrontendChatClient.View
         private string[] scopes = {"user.read"};
 
         private MainViewModel MainViewModel { get; set; }
-        
-        private string _nomeUtilizadorLogado;
-        private string _emailUtilizadorLogado;
+        private string NomeUtilizadorLigado { get; set; }
+        private string EmailUtilizadorLigado { get; set; }
 
         public MainWindow()
         {
@@ -43,6 +42,14 @@ namespace WPFFrontendChatClient.View
             DataContext = new MainViewModel();
             MainViewModel = (MainViewModel) DataContext;
             MainViewModel.AddMensagemEvent += DisplayMensagem;
+            MainViewModel.AddSeparadorEvent += AddTabItem;
+            
+            _tabItems=new List<TabItem>();
+            TabItem tabItemAdd = new TabItem {Header = "+"};
+            _tabItems.Add(tabItemAdd);
+            AddTabItem();
+            ChatTabControl.DataContext = _tabItems;
+            ChatTabControl.SelectedIndex = 0;
         }
 
         /// <summary>
@@ -90,19 +97,19 @@ namespace WPFFrontendChatClient.View
 
             if (authResult == null) return;
             string nomeTemp = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
-            _emailUtilizadorLogado = authResult.Account.Username;
+            EmailUtilizadorLigado = authResult.Account.Username;
             TextBlockUtilizadorLogado.Text = "";
-            TextBlockUtilizadorLogado.Text += nomeTemp + " (" + _emailUtilizadorLogado + ")";
+            TextBlockUtilizadorLogado.Text += nomeTemp + " (" + EmailUtilizadorLigado + ")";
             EntrarPanel.Visibility = Visibility.Collapsed;
             ChatPanel.Visibility = Visibility.Visible;
             if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
             {
-                Aluno a1 = new Aluno() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
+                Aluno a1 = new Aluno {Nome = nomeTemp, Email = EmailUtilizadorLigado};
                 MainViewModel.ConnectAction(a1);
             }
             else
             {
-                Professor p1 = new Professor() {Nome = nomeTemp, Email = _emailUtilizadorLogado};
+                Professor p1 = new Professor {Nome = nomeTemp, Email = EmailUtilizadorLigado};
                 MainViewModel.ConnectAction(p1);
 
                 // TODO: Fazer o mesmo para professores
@@ -125,7 +132,7 @@ namespace WPFFrontendChatClient.View
                 HttpResponseMessage response = await httpClient.SendAsync(request);
                 string content = await response.Content.ReadAsStringAsync();
                 JObject contentJObject = JObject.Parse(content);
-                return _nomeUtilizadorLogado = contentJObject["givenName"] + " " + (string) contentJObject["surname"];
+                return NomeUtilizadorLigado = contentJObject["givenName"] + " " + (string) contentJObject["surname"];
             }
             catch (Exception ex)
             {
@@ -166,10 +173,10 @@ namespace WPFFrontendChatClient.View
         /// <param name="e"></param>
         private void EnviarMensagem_OnClick(object sender, RoutedEventArgs e)
         {
-            Mensagem mensagem = new Mensagem()
+            Mensagem mensagem = new Mensagem
             {
                 Conteudo = TextBoxMensagem.Text, DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"),
-                Destinatario = "loby", NomeRemetente = _nomeUtilizadorLogado, Remetente = _emailUtilizadorLogado
+                Destinatario = "loby", NomeRemetente = NomeUtilizadorLigado, Remetente = EmailUtilizadorLigado
             };
             DisplayMensagem(mensagem);
             MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
@@ -187,7 +194,7 @@ namespace WPFFrontendChatClient.View
             Thickness mensagemTextBlockThickness = mensagemTextBlock.Margin;
             mensagemTextBlockThickness.Top = 10;
             mensagemTextBlock.Margin = mensagemTextBlockThickness;
-            if (_emailUtilizadorLogado == mensagem.Remetente)
+            if (EmailUtilizadorLigado == mensagem.Remetente)
             {
                 mensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
                     {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
@@ -199,12 +206,86 @@ namespace WPFFrontendChatClient.View
             }
 
             mensagemTextBlock.Inlines.Add(" " + mensagem.Conteudo);
-            LobyChat.Children.Add(mensagemTextBlock);
+            // LobyChat.Children.Add(mensagemTextBlock);
 
             TextBlock dataHoraEnvioTextBlock = new TextBlock {FontSize = 9, Text = mensagem.DataHoraEnvio};
-            LobyChat.Children.Add(dataHoraEnvioTextBlock);
+            // LobyChat.Children.Add(dataHoraEnvioTextBlock);
 
-            LobyScrollViewer.ScrollToBottom();
+            // LobyScrollViewer.ScrollToBottom();
         }
+
+        
+        
+        
+        
+        
+        // ZONA EM CONSTRUÇÃO (Usar Capacete :D )
+        
+        private List<TabItem> _tabItems;
+        private TabItem _tabAdd;
+        
+        private void ChatTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            /*TabItem tab = ChatTabControl.SelectedItem as TabItem;
+
+            if (tab != null && tab.Header != null)
+            {
+                if (tab.Header.Equals("+"))
+                {
+                    AddTabItem();
+                }
+                else
+                {
+                    // your code here...
+                }
+            }*/
+        }
+
+        private void CloseTabButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            string tabName = ((Button) sender).CommandParameter.ToString();
+            TabItem item = ChatTabControl.Items.Cast<TabItem>().SingleOrDefault(i => i.Name.Equals(tabName));
+            TabItem tab = item;
+            if (tab == null) return;
+            if (_tabItems.Count < 3)
+            {
+                MessageBox.Show("Cannot remove last tab.");
+            }
+            else if (MessageBox.Show($"Are you sure you want to remove the tab '{tab.Header}'?",
+                "Remove Tab", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+            {
+                TabItem selectedTab = ChatTabControl.SelectedItem as TabItem;
+                ChatTabControl.DataContext = null;
+                _tabItems.Remove(tab);
+                ChatTabControl.DataContext = _tabItems;
+                if (selectedTab == null || selectedTab.Equals(tab))
+                {
+                    selectedTab = _tabItems[0];
+                }
+                ChatTabControl.SelectedItem = selectedTab;
+            }
+        }
+
+        private void AddTabItem()
+        {
+            ChatTabControl.DataContext = null;
+
+            int count = _tabItems.Count;
+            TabItem tab = new TabItem
+            {
+                Header = $"Tab {count}",
+                Name = $"tab{count}",
+                HeaderTemplate = ChatTabControl.FindResource("TabHeader") as DataTemplate
+            };
+
+            TextBox txt = new TextBox {Name = "txt"};
+            tab.Content = txt;
+            
+            _tabItems.Insert(count - 1, tab);
+            ChatTabControl.DataContext = _tabItems;
+            ChatTabControl.SelectedItem = tab;
+        }
+        
+        // FIM DE ZONA EM CONSTRUÇÃO
     }
 }

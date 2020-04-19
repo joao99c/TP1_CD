@@ -9,10 +9,10 @@
         Title="Chat Window" Width="1280" Height="720" MinWidth="1280" MinHeight="720" MaxWidth="1280" MaxHeight="720"
         WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize">
     <Grid>
-        <DockPanel x:Name="EntrarPanel">
+        <DockPanel Name="EntrarPanel">
             <Button Click="ButtonEntrar_Click" Content="Entrar" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </DockPanel>
-        <DockPanel x:Name="ChatPanel" Visibility="Collapsed">
+        <DockPanel Name="ChatPanel" Visibility="Collapsed">
             <TabControl TabStripPlacement="Top" DockPanel.Dock="Left" VerticalAlignment="Top" Width="150"
                         Margin="10,10,10,10">
                 <TabItem>
@@ -31,8 +31,10 @@
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding UnidadeCurricular.Nome}" Grid.Column="0"
                                                        Margin="5,2,2,2" />
-                                            <Button Content="➡" Grid.Column="1" HorizontalAlignment="Right"
-                                                    Background="Transparent" BorderThickness="0" />
+                                            <Button Command="{Binding AbrirSeparadorChatCommand}"
+                                                    CommandParameter="{Binding .}" Content="➡" Grid.Column="1"
+                                                    HorizontalAlignment="Right" Background="Transparent"
+                                                    BorderThickness="0" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -42,7 +44,7 @@
                 </TabItem>
                 <TabItem>
                     <TabItem.Header>
-                        <TextBlock Text="Utilizadores" FontWeight="Bold" />
+                        <TextBlock Text="Alunos" FontWeight="Bold" />
                     </TabItem.Header>
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
                         <Grid>
@@ -54,9 +56,39 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="20" />
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Nome}" Grid.Column="0" Margin="5,2,2,2" />
-                                            <Button Content="✉" Grid.Column="1" HorizontalAlignment="Right"
-                                                    Background="Transparent" BorderThickness="0" />
+                                            <TextBlock Text="{Binding Nome}" Name="TextBlockNome" Grid.Column="0"
+                                                       Margin="5,2,2,2" />
+                                            <Button Command="{Binding AbrirSeparadorChatCommand}"
+                                                    CommandParameter="{Binding .}" Content="✉" Grid.Column="1"
+                                                    HorizontalAlignment="Right" Background="Transparent"
+                                                    BorderThickness="0" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Professores" FontWeight="Bold" />
+                    </TabItem.Header>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                        <Grid>
+                            <ItemsControl ItemsSource="{Binding Professores}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="20" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Nome}" Name="TextBlockNome" Grid.Column="0"
+                                                       Margin="5,2,2,2" />
+                                            <Button Command="{Binding AbrirSeparadorChatCommand}"
+                                                    CommandParameter="{Binding .}" Content="✉" Grid.Column="1"
+                                                    HorizontalAlignment="Right" Background="Transparent"
+                                                    BorderThickness="0" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -71,11 +103,15 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Command="{Binding AddAlunoTeste}" Content="Adicionar Utilizador (Teste)"
+                    <Button Command="{Binding AddAlunoTeste}" Content="Adicionar Aluno (Teste)"
+                            HorizontalAlignment="Left" Margin="0,0,5,0" />
+                    <Button Command="{Binding AddProfessorTeste}" Content="Adicionar Professor (Teste)"
+                            HorizontalAlignment="Left" Margin="0,0,5,0" />
+                    <Button Command="{Binding AddAulaTeste}" Content="Adicionar Aula (Teste)"
                             HorizontalAlignment="Left" Margin="0,0,5,0" />
                     <Button Command="{Binding AddMensagemTeste}" Content="Adicionar Mensagem (Teste)"
                             HorizontalAlignment="Left" Margin="0,0,5,0" />
-                    <TextBlock x:Name="TextBlockUtilizadorLogado" VerticalAlignment="Center" FontWeight="Bold" />
+                    <TextBlock Name="TextBlockUtilizadorLogado" VerticalAlignment="Center" FontWeight="Bold" />
                 </StackPanel>
                 <Button Click="ButtonSair_Click" Content="🚪" Grid.Column="1" FontSize="15" Background="Transparent"
                         BorderThickness="0" Margin="10,0,0,0" />
@@ -85,13 +121,13 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBox x:Name="TextBoxMensagem" Grid.Column="0" Height="Auto" MaxHeight="50" AcceptsReturn="True"
+                <TextBox Name="TextBoxMensagem" Grid.Column="0" Height="Auto" MaxHeight="50" AcceptsReturn="True"
                          SpellCheck.IsEnabled="True" Language="pt-PT" TextWrapping="Wrap" HorizontalAlignment="Stretch"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
                 <Button Click="EnviarMensagem_OnClick" Content="Enviar" Grid.Column="1" Margin="10,0,0,0"
                         Padding="15,0,15,0" HorizontalAlignment="Left" />
             </Grid>
-            <TabControl Margin="10,0,10,0">
+            <!--<TabControl Margin="10,0,10,0">
                 <TabItem>
                     <TabItem.Header>
                         <TextBlock Text="Loby" FontWeight="Bold" />
@@ -113,7 +149,32 @@
                         </Grid>
                     </ScrollViewer>
                 </TabItem>
+            </TabControl>-->
+            
+            
+            
+            <TabControl x:Name="ChatTabControl" ItemsSource="{Binding}" SelectionChanged="ChatTabControl_OnSelectionChanged">
+                <TabControl.Resources>
+                    <DataTemplate x:Key="TabHeader" DataType="TabItem">
+                        <DockPanel>
+                            <Button Name="CloseTabButton" DockPanel.Dock="Right" Margin="5,0,0,0" Padding="0" Click="CloseTabButton_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}, Path=Name}" Content="D"></Button>
+                            <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}, Path=Header}" />
+                        </DockPanel>
+                    </DataTemplate>
+                    <Style TargetType="TextBox">
+                        <Setter Property="VerticalAlignment" Value="Stretch"></Setter>
+                        <Setter Property="HorizontalAlignment" Value="Stretch"></Setter>
+                        <Setter Property="AcceptsReturn" Value="True"></Setter>
+                        <Setter Property="TextWrapping" Value="WrapWithOverflow"></Setter>
+                        <Setter Property="MaxLines" Value="5000"></Setter>
+                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"></Setter>
+                        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"></Setter>
+                    </Style>
+                </TabControl.Resources>
             </TabControl>
+            
+            
+            
         </DockPanel>
     </Grid>
 </Window>

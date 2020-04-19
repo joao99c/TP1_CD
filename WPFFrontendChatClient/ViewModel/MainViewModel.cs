@@ -34,9 +34,13 @@ namespace WPFFrontendChatClient.ViewModel
         public ObservableCollection<Aula> Aulas { get; set; }
         private ObservableCollection<Mensagem> Mensagens { set; get; }
         public ICommand AddAlunoTeste { get; set; }
+        public ICommand AddProfessorTeste { get; set; }
         public ICommand AddMensagemTeste { get; set; }
-        public delegate void AddMensagemAction(Mensagem mensagem);
+        public ICommand AddAulaTeste { get; set; }
         public event AddMensagemAction AddMensagemEvent;
+        public event AddSeparadorAction AddSeparadorEvent;
+        public delegate void AddMensagemAction(Mensagem mensagem);
+        public delegate void AddSeparadorAction();
 
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
@@ -50,10 +54,8 @@ namespace WPFFrontendChatClient.ViewModel
 
             AddMensagemTeste = new RelayCommand(AddMensagemRecebidaAction);
             AddAlunoTeste = new RelayCommand(AddAlunoTesteAction);
-
-            Aulas.Add(new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "CD"}});
-            Aulas.Add(new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "AEDII"}});
-            Aulas.Add(new Aula() {UnidadeCurricular = new UnidadeCurricular() {Nome = "LPII"}});
+            AddProfessorTeste = new RelayCommand(AddProfessorTesteAction);
+            AddAulaTeste = new RelayCommand(AddAulaTesteAction);
         }
 
         /// <summary>
@@ -95,9 +97,54 @@ namespace WPFFrontendChatClient.ViewModel
             AddMensagemEvent?.Invoke(Mensagens.Last());
         }
 
+        /// <summary>
+        /// Cria um separador de chat privado com o utilizador escolhido
+        /// </summary>
+        /// <param name="utilizador">Utilizador para criar separador</param>
+        /// <typeparam name="T">Tipo de Utilizador</typeparam>
+        private void CriarSeparadorChatPrivado<T>(T utilizador) where T : Utilizador
+        {
+            /*MessageBox.Show("Nome: " + utilizador.Nome + "\nEmail: " + utilizador.Email,
+                "Criar Separador Chat Privado");*/
+            AddSeparadorEvent?.Invoke();
+        }
+        
+        /// <summary>
+        /// Cria um separador de chat da Aula/UC escolhida
+        /// </summary>
+        /// <param name="aula">Aula para criar separador</param>
+        private void CriarSeparadorChatAula(Aula aula)
+        {
+            MessageBox.Show("Aula: " + aula.UnidadeCurricular.Nome, "Criar Separador Chat Aula");
+        }
+
+        private int _numAux = 0;
+
         private void AddAlunoTesteAction()
         {
-            Alunos.Add(new Aluno() {Nome = "Nome Teste"});
+            Alunos.Add(new Aluno()
+            {
+                Nome = "Aluno " + ++_numAux, Email = "aluno" + _numAux + "@alunos.ipca.pt",
+                AbrirSeparadorChatCommand = new RelayCommand<Aluno>(CriarSeparadorChatPrivado)
+            });
+        }
+
+        private void AddProfessorTesteAction()
+        {
+            Professores.Add(new Professor()
+            {
+                Nome = "Professor " + ++_numAux, Email = "professor" + _numAux + "@ipca.pt",
+                AbrirSeparadorChatCommand = new RelayCommand<Professor>(CriarSeparadorChatPrivado)
+            });
+        }
+
+        private void AddAulaTesteAction()
+        {
+            Aulas.Add(new Aula()
+            {
+                UnidadeCurricular = new UnidadeCurricular() {Nome = "UC " + ++_numAux},
+                AbrirSeparadorChatCommand = new RelayCommand<Aula>(CriarSeparadorChatAula)
+            });
         }
     }
 }
