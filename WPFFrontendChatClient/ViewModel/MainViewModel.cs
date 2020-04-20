@@ -38,10 +38,12 @@ namespace WPFFrontendChatClient.ViewModel
         public ICommand AddMensagemTeste { get; set; }
         public ICommand AddAulaTeste { get; set; }
         public event AddMensagemAction AddMensagemEvent;
-        public event AddSeparadorAction AddSeparadorEvent;
+        public event AddSeparadorAction<Utilizador> AddSeparadorEvent;
         public delegate void AddMensagemAction(Mensagem mensagem);
-        public delegate void AddSeparadorAction();
+        public delegate void AddSeparadorAction<in T>(T utilizador);
 
+        
+        
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
         /// </summary>
@@ -106,7 +108,7 @@ namespace WPFFrontendChatClient.ViewModel
         {
             /*MessageBox.Show("Nome: " + utilizador.Nome + "\nEmail: " + utilizador.Email,
                 "Criar Separador Chat Privado");*/
-            AddSeparadorEvent?.Invoke();
+            AddSeparadorEvent?.Invoke(utilizador);
         }
         
         /// <summary>

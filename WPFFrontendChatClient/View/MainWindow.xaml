@@ -150,31 +150,41 @@
                     </ScrollViewer>
                 </TabItem>
             </TabControl>-->
-            
-            
-            
-            <TabControl x:Name="ChatTabControl" ItemsSource="{Binding}" SelectionChanged="ChatTabControl_OnSelectionChanged">
+
+
+            <TabControl x:Name="ChatTabControl" ItemsSource="{Binding}">
                 <TabControl.Resources>
                     <DataTemplate x:Key="TabHeader" DataType="TabItem">
                         <DockPanel>
-                            <Button Name="CloseTabButton" DockPanel.Dock="Right" Margin="5,0,0,0" Padding="0" Click="CloseTabButton_OnClick" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}, Path=Name}" Content="D"></Button>
-                            <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}, Path=Header}" />
+                            <Button Name="CloseTabButton" DockPanel.Dock="Right" Click="CloseTabButton_OnClick"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}, Path=Name}"
+                                    Content="❌" Margin="5,0,0,0" BorderThickness="0" Background="Transparent"
+                                    Foreground="Red" />
+                            <TextBlock
+                                Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabItem}}, Path=Header}" />
                         </DockPanel>
                     </DataTemplate>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="VerticalScrollBarVisibility" Value="Auto"></Setter>
+                        <Setter Property="HorizontalScrollBarVisibility" Value="Auto"></Setter>
+                    </Style>
+                    
+                    
+                    
+                    
                     <Style TargetType="TextBox">
-                        <Setter Property="VerticalAlignment" Value="Stretch"></Setter>
-                        <Setter Property="HorizontalAlignment" Value="Stretch"></Setter>
-                        <Setter Property="AcceptsReturn" Value="True"></Setter>
-                        <Setter Property="TextWrapping" Value="WrapWithOverflow"></Setter>
-                        <Setter Property="MaxLines" Value="5000"></Setter>
-                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"></Setter>
-                        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Stretch" />
+                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                        <Setter Property="AcceptsReturn" Value="True" />
+                        <Setter Property="TextWrapping" Value="WrapWithOverflow" />
+                        <Setter Property="MaxLines" Value="5000" />
+                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+                        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
                     </Style>
                 </TabControl.Resources>
             </TabControl>
-            
-            
-            
+
+
         </DockPanel>
     </Grid>
 </Window>

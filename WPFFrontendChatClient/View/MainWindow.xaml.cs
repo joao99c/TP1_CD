@@ -25,12 +25,13 @@ namespace WPFFrontendChatClient.View
         // Set the API Endpoint to Graph 'me' endpoint. 
         // To change from Microsoft public cloud to a national cloud, use another value of graphAPIEndpoint.
         // Reference with Graph endpoints here: https://docs.microsoft.com/graph/deployments#microsoft-graph-and-graph-explorer-service-root-endpoints
-        private string graphAPIEndpoint = "https://graph.microsoft.com/v1.0/me";
+        private const string GraphApiEndpoint = "https://graph.microsoft.com/v1.0/me";
 
         //Set the scope for API call to user.read
-        private string[] scopes = {"user.read"};
+        private readonly string[] _scopes = {"user.read"};
 
         private MainViewModel MainViewModel { get; set; }
+        private List<TabItem> TabItems { get; set; }
         private string NomeUtilizadorLigado { get; set; }
         private string EmailUtilizadorLigado { get; set; }
 
@@ -42,14 +43,16 @@ namespace WPFFrontendChatClient.View
             DataContext = new MainViewModel();
             MainViewModel = (MainViewModel) DataContext;
             MainViewModel.AddMensagemEvent += DisplayMensagem;
-            MainViewModel.AddSeparadorEvent += AddTabItem;
-            
-            _tabItems=new List<TabItem>();
-            TabItem tabItemAdd = new TabItem {Header = "+"};
-            _tabItems.Add(tabItemAdd);
-            AddTabItem();
-            ChatTabControl.DataContext = _tabItems;
-            ChatTabControl.SelectedIndex = 0;
+            MainViewModel.AddSeparadorEvent += AddSeparadorChat;
+
+            TabItems = new List<TabItem>();
+            // TabItem lobbyTabItem = new TabItem {Header = "Lobby", HeaderTemplate = ChatTabControl.FindResource("TabHeader") as DataTemplate};
+            // TextBox txt = new TextBox {Name = "txt"};
+            // lobbyTabItem.Content = txt;
+            // _tabItems.Add(lobbyTabItem);
+            AddSeparadorChat(new Aluno() {Nome = "Lobby", Email = "lobby@asdsa"});
+            // ChatTabControl.DataContext = _tabItems;
+            // ChatTabControl.SelectedItem = lobbyTabItem;
         }
 
         /// <summary>
@@ -66,7 +69,7 @@ namespace WPFFrontendChatClient.View
             IAccount firstAccount = accounts.FirstOrDefault();
             try
             {
-                authResult = await app.AcquireTokenSilent(scopes, firstAccount).ExecuteAsync();
+                authResult = await app.AcquireTokenSilent(_scopes, firstAccount).ExecuteAsync();
             }
             catch (MsalUiRequiredException ex)
             {
@@ -75,7 +78,7 @@ namespace WPFFrontendChatClient.View
                 Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
                 try
                 {
-                    authResult = await app.AcquireTokenInteractive(scopes).WithAccount(accounts.FirstOrDefault())
+                    authResult = await app.AcquireTokenInteractive(_scopes).WithAccount(accounts.FirstOrDefault())
                         .WithParentActivityOrWindow(new WindowInteropHelper(this)
                             .Handle) // optional, used to center the browser on the window
                         .WithPrompt(Prompt.SelectAccount).ExecuteAsync();
@@ -96,7 +99,7 @@ namespace WPFFrontendChatClient.View
             }
 
             if (authResult == null) return;
-            string nomeTemp = await GetHttpContentWithToken(graphAPIEndpoint, authResult.AccessToken);
+            string nomeTemp = await GetHttpContentWithToken(GraphApiEndpoint, authResult.AccessToken);
             EmailUtilizadorLigado = authResult.Account.Username;
             TextBlockUtilizadorLogado.Text = "";
             TextBlockUtilizadorLogado.Text += nomeTemp + " (" + EmailUtilizadorLigado + ")";
@@ -214,78 +217,70 @@ namespace WPFFrontendChatClient.View
             // LobyScrollViewer.ScrollToBottom();
         }
 
-        
-        
-        
-        
-        
-        // ZONA EM CONSTRUÇÃO (Usar Capacete :D )
-        
-        private List<TabItem> _tabItems;
-        private TabItem _tabAdd;
-        
-        private void ChatTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            /*TabItem tab = ChatTabControl.SelectedItem as TabItem;
 
-            if (tab != null && tab.Header != null)
-            {
-                if (tab.Header.Equals("+"))
-                {
-                    AddTabItem();
-                }
-                else
-                {
-                    // your code here...
-                }
-            }*/
-        }
-
+        /// <summary>
+        /// Fecha o separador de Chat.
+        /// <para>Não deixa fechar o separador do "Lobby".</para>
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void CloseTabButton_OnClick(object sender, RoutedEventArgs e)
         {
             string tabName = ((Button) sender).CommandParameter.ToString();
+            if (tabName == "lobby") return;
             TabItem item = ChatTabControl.Items.Cast<TabItem>().SingleOrDefault(i => i.Name.Equals(tabName));
             TabItem tab = item;
             if (tab == null) return;
-            if (_tabItems.Count < 3)
+            if (TabItems.Count <= 1) return;
+            TabItem selectedTabItem = ChatTabControl.SelectedItem as TabItem;
+            ChatTabControl.DataContext = null;
+            TabItems.Remove(tab);
+            ChatTabControl.DataContext = TabItems;
+            if (selectedTabItem == null || selectedTabItem.Equals(tab))
             {
-                MessageBox.Show("Cannot remove last tab.");
+                selectedTabItem = TabItems[0];
             }
-            else if (MessageBox.Show($"Are you sure you want to remove the tab '{tab.Header}'?",
-                "Remove Tab", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-            {
-                TabItem selectedTab = ChatTabControl.SelectedItem as TabItem;
-                ChatTabControl.DataContext = null;
-                _tabItems.Remove(tab);
-                ChatTabControl.DataContext = _tabItems;
-                if (selectedTab == null || selectedTab.Equals(tab))
-                {
-                    selectedTab = _tabItems[0];
-                }
-                ChatTabControl.SelectedItem = selectedTab;
-            }
+
+            ChatTabControl.SelectedItem = selectedTabItem;
         }
 
-        private void AddTabItem()
+        /// <summary>
+        /// Adiciona um separador de chat.
+        /// <para>Se o separador já existir não adiciona.</para>
+        /// </summary>
+        /// <param name="utilizador">Utilizador do separador (Destinatário)</param>
+        /// <typeparam name="T">Tipo de Utilizador</typeparam>
+        private void AddSeparadorChat<T>(T utilizador) where T : Utilizador
         {
+            string tabName = utilizador.Email.Substring(0, utilizador.Email.IndexOf("@", StringComparison.Ordinal));
+            string tabHeader = $"{utilizador.Nome} ({tabName})";
+            bool existeTabIgual = false;
+
+            TabItems.ForEach(tab =>
+            {
+                if ((string) tab.Header == tabHeader)
+                {
+                    existeTabIgual = true;
+                }
+            });
+
+            if (existeTabIgual) return;
             ChatTabControl.DataContext = null;
 
-            int count = _tabItems.Count;
-            TabItem tab = new TabItem
+            int count = TabItems.Count;
+            TabItem novaTabItem = new TabItem
             {
-                Header = $"Tab {count}",
-                Name = $"tab{count}",
+                Header = tabHeader, Name = tabName,
                 HeaderTemplate = ChatTabControl.FindResource("TabHeader") as DataTemplate
             };
 
+            // TODO: Layout do chat
             TextBox txt = new TextBox {Name = "txt"};
-            tab.Content = txt;
-            
-            _tabItems.Insert(count - 1, tab);
-            ChatTabControl.DataContext = _tabItems;
-            ChatTabControl.SelectedItem = tab;
+            novaTabItem.Content = txt;
+
+            TabItems.Insert(count, novaTabItem);
+            ChatTabControl.DataContext = TabItems;
+            ChatTabControl.SelectedItem = novaTabItem;
         }
-        
-        // FIM DE ZONA EM CONSTRUÇÃO
     }
 }
