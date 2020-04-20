@@ -43,8 +43,8 @@ namespace WPFFrontendChatClient.View
             MainViewModel = (MainViewModel) DataContext;
             MainViewModel.AddMensagemEvent += DisplayMensagem;
             MainViewModel.AddSeparadorEvent += AddTabItem;
-            
-            _tabItems=new List<TabItem>();
+
+            _tabItems = new List<TabItem>();
             TabItem tabItemAdd = new TabItem {Header = "+"};
             _tabItems.Add(tabItemAdd);
             AddTabItem();
@@ -102,18 +102,18 @@ namespace WPFFrontendChatClient.View
             TextBlockUtilizadorLogado.Text += nomeTemp + " (" + EmailUtilizadorLigado + ")";
             EntrarPanel.Visibility = Visibility.Collapsed;
             ChatPanel.Visibility = Visibility.Visible;
+            Utilizador user;
             if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
             {
-                Aluno a1 = new Aluno {Nome = nomeTemp, Email = EmailUtilizadorLigado};
-                MainViewModel.ConnectAction(a1);
+                user = new Utilizador(nomeTemp, EmailUtilizadorLigado, Utilizador.UserType.aluno);
             }
             else
             {
-                Professor p1 = new Professor {Nome = nomeTemp, Email = EmailUtilizadorLigado};
-                MainViewModel.ConnectAction(p1);
-
+                user = new Utilizador(nomeTemp, EmailUtilizadorLigado, Utilizador.UserType.prof);
                 // TODO: Fazer o mesmo para professores
             }
+
+            MainViewModel.ConnectAction(user);
         }
 
         /// <summary>
@@ -173,11 +173,9 @@ namespace WPFFrontendChatClient.View
         /// <param name="e"></param>
         private void EnviarMensagem_OnClick(object sender, RoutedEventArgs e)
         {
-            Mensagem mensagem = new Mensagem
-            {
-                Conteudo = TextBoxMensagem.Text, DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"),
-                Destinatario = "loby", NomeRemetente = NomeUtilizadorLigado, Remetente = EmailUtilizadorLigado
-            };
+            Mensagem mensagem = new Mensagem(EmailUtilizadorLigado, "0","Lobby", 
+                TextBoxMensagem.Text, NomeUtilizadorLigado);
+
             DisplayMensagem(mensagem);
             MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
             TextBoxMensagem.Text = "";
@@ -194,7 +192,7 @@ namespace WPFFrontendChatClient.View
             Thickness mensagemTextBlockThickness = mensagemTextBlock.Margin;
             mensagemTextBlockThickness.Top = 10;
             mensagemTextBlock.Margin = mensagemTextBlockThickness;
-            if (EmailUtilizadorLigado == mensagem.Remetente)
+            if (EmailUtilizadorLigado == mensagem.IdRemetente)
             {
                 mensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
                     {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
@@ -214,16 +212,12 @@ namespace WPFFrontendChatClient.View
             // LobyScrollViewer.ScrollToBottom();
         }
 
-        
-        
-        
-        
-        
+
         // ZONA EM CONSTRUÇÃO (Usar Capacete :D )
-        
+
         private List<TabItem> _tabItems;
         private TabItem _tabAdd;
-        
+
         private void ChatTabControl_OnSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             /*TabItem tab = ChatTabControl.SelectedItem as TabItem;
@@ -262,6 +256,7 @@ namespace WPFFrontendChatClient.View
                 {
                     selectedTab = _tabItems[0];
                 }
+
                 ChatTabControl.SelectedItem = selectedTab;
             }
         }
@@ -280,12 +275,12 @@ namespace WPFFrontendChatClient.View
 
             TextBox txt = new TextBox {Name = "txt"};
             tab.Content = txt;
-            
+
             _tabItems.Insert(count - 1, tab);
             ChatTabControl.DataContext = _tabItems;
             ChatTabControl.SelectedItem = tab;
         }
-        
+
         // FIM DE ZONA EM CONSTRUÇÃO
     }
 }

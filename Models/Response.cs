@@ -6,7 +6,7 @@ using Models;
 namespace ClassLibrary
 {
     [Serializable]
-    public class Response<T>
+    public class Response
     {
         public enum Operation
         {
@@ -14,7 +14,7 @@ namespace ClassLibrary
             EntrarChat,
             LeaveChat,
             SendMessage,
-            GetUser,
+            GetUserInfo,
             NewUserOnline
             // ....
         }
@@ -22,9 +22,9 @@ namespace ClassLibrary
         public Operation Op { get; set; }
         public Mensagem Msg { get; set; }
         
-        public T User { get; set; }
+        public Utilizador User { get; set; }
 
-        public Response(Operation op, T user, Mensagem msg=null)
+        public Response(Operation op, Utilizador user, Mensagem msg=null)
         {
             Op = op;
             Msg = msg;
@@ -44,7 +44,7 @@ namespace ClassLibrary
                     Msg = msg;
                     break;
                 }
-                case Operation.GetUser:
+                case Operation.GetUserInfo:
                 {
                     Msg = msg;
                     break;

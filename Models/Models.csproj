@@ -44,7 +44,6 @@
         <Reference Include="System.Xml" />
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="Aluno.cs" />
         <Compile Include="Aula.cs" />
         <Compile Include="Cliente.cs" />
         <Compile Include="Mensagem.cs" />
@@ -52,7 +51,6 @@
         <Compile Include="Curso.cs" />
         <Compile Include="Helpers.cs" />
         <Compile Include="Horario.cs" />
-        <Compile Include="Professor.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="UnidadeCurricular.cs" />
         <Compile Include="Utilizador.cs" />
