@@ -127,31 +127,6 @@
                 <Button Click="EnviarMensagem_OnClick" Content="Enviar" Grid.Column="1" Margin="10,0,0,0"
                         Padding="15,0,15,0" HorizontalAlignment="Left" />
             </Grid>
-            <!--<TabControl Margin="10,0,10,0">
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Loby" FontWeight="Bold" />
-                    </TabItem.Header>
-                    <ScrollViewer x:Name="LobyScrollViewer" VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Auto">
-                        <Grid>
-                            <ItemsControl VerticalAlignment="Bottom">
-                                <Grid Margin="5,0,5,5">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel x:Name="LobyChat" Grid.Column="0" HorizontalAlignment="Right"
-                                                Orientation="Vertical" />
-                                </Grid>
-                            </ItemsControl>
-                        </Grid>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>-->
-
-
             <TabControl x:Name="ChatTabControl" ItemsSource="{Binding}">
                 <TabControl.Resources>
                     <DataTemplate x:Key="TabHeader" DataType="TabItem">
@@ -166,25 +141,15 @@
                     </DataTemplate>
                     <Style TargetType="ScrollViewer">
                         <Setter Property="VerticalScrollBarVisibility" Value="Auto"></Setter>
-                        <Setter Property="HorizontalScrollBarVisibility" Value="Auto"></Setter>
                     </Style>
-                    
-                    
-                    
-                    
-                    <Style TargetType="TextBox">
-                        <Setter Property="VerticalAlignment" Value="Stretch" />
-                        <Setter Property="HorizontalAlignment" Value="Stretch" />
-                        <Setter Property="AcceptsReturn" Value="True" />
-                        <Setter Property="TextWrapping" Value="WrapWithOverflow" />
-                        <Setter Property="MaxLines" Value="5000" />
-                        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
-                        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+                    <Style TargetType="ItemsControl">
+                        <Setter Property="VerticalAlignment" Value="Bottom"></Setter>
+                    </Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Orientation" Value="Vertical"></Setter>
                     </Style>
                 </TabControl.Resources>
             </TabControl>
-
-
         </DockPanel>
     </Grid>
 </Window>

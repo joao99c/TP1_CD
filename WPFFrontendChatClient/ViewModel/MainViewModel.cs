@@ -93,7 +93,7 @@ namespace WPFFrontendChatClient.ViewModel
         {
             Mensagens.Add(new Mensagem()
             {
-                Remetente = "teste@alunos.ipca.pt", Destinatario = "loby", Conteudo = "MSG Teste",
+                Remetente = "teste@alunos.ipca.pt", Destinatario = "lobby", Conteudo = "MSG Teste",
                 DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "Teste Teste"
             });
             AddMensagemEvent?.Invoke(Mensagens.Last());
@@ -106,8 +106,6 @@ namespace WPFFrontendChatClient.ViewModel
         /// <typeparam name="T">Tipo de Utilizador</typeparam>
         private void CriarSeparadorChatPrivado<T>(T utilizador) where T : Utilizador
         {
-            /*MessageBox.Show("Nome: " + utilizador.Nome + "\nEmail: " + utilizador.Email,
-                "Criar Separador Chat Privado");*/
             AddSeparadorEvent?.Invoke(utilizador);
         }
         

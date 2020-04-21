@@ -46,13 +46,7 @@ namespace WPFFrontendChatClient.View
             MainViewModel.AddSeparadorEvent += AddSeparadorChat;
 
             TabItems = new List<TabItem>();
-            // TabItem lobbyTabItem = new TabItem {Header = "Lobby", HeaderTemplate = ChatTabControl.FindResource("TabHeader") as DataTemplate};
-            // TextBox txt = new TextBox {Name = "txt"};
-            // lobbyTabItem.Content = txt;
-            // _tabItems.Add(lobbyTabItem);
-            AddSeparadorChat(new Aluno() {Nome = "Lobby", Email = "lobby@asdsa"});
-            // ChatTabControl.DataContext = _tabItems;
-            // ChatTabControl.SelectedItem = lobbyTabItem;
+            AddSeparadorChat(new Aluno() {Nome = "Lobby", Email = "lobby@fake"});
         }
 
         /// <summary>
@@ -151,35 +145,34 @@ namespace WPFFrontendChatClient.View
         private async void ButtonSair_Click(object sender, RoutedEventArgs e)
         {
             IEnumerable<IAccount> accounts = await App.PublicClientApp.GetAccountsAsync();
-            if (accounts.Any())
+            if (!accounts.Any()) return;
+            try
             {
-                try
-                {
-                    await App.PublicClientApp.RemoveAsync(accounts.FirstOrDefault());
-                    ChatPanel.Visibility = Visibility.Collapsed;
-                    EntrarPanel.Visibility = Visibility.Visible;
-                }
-                catch (MsalException ex)
-                {
-                    // Erro ao Sair
-                    MessageBox.Show("Erro ao Terminar Sessão: " + ex.Message);
-                    // ResultText.Text = $"Error signing-out user: {ex.Message}";
-                }
+                await App.PublicClientApp.RemoveAsync(accounts.FirstOrDefault());
+                ChatPanel.Visibility = Visibility.Collapsed;
+                EntrarPanel.Visibility = Visibility.Visible;
+            }
+            catch (MsalException ex)
+            {
+                // Erro ao Sair
+                MessageBox.Show("Erro ao Terminar Sessão: " + ex.Message);
+                // ResultText.Text = $"Error signing-out user: {ex.Message}";
             }
         }
 
         /// <summary>
         /// Adiciona a Mensagem ao chat e envia-a para a MainViewModel
-        /// <para>TODO: Detetar o Destinatário</para>
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
         private void EnviarMensagem_OnClick(object sender, RoutedEventArgs e)
         {
+            TabItem destinatarioTabItem = (TabItem) ChatTabControl.SelectedItem;
             Mensagem mensagem = new Mensagem
             {
                 Conteudo = TextBoxMensagem.Text, DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"),
-                Destinatario = "loby", NomeRemetente = NomeUtilizadorLigado, Remetente = EmailUtilizadorLigado
+                Destinatario = destinatarioTabItem.Name, NomeRemetente = NomeUtilizadorLigado,
+                Remetente = EmailUtilizadorLigado
             };
             DisplayMensagem(mensagem);
             MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
@@ -188,12 +181,17 @@ namespace WPFFrontendChatClient.View
 
         /// <summary>
         /// Recebe uma Mensagem e cria os TextBlock's para colocar no chat
-        /// <para>TODO: Colocar a funcionar com vários separadores de chat dependendo do Destinatário</para>
+        /// <para>TODO: Detetar se o separador está aberto ou não, se não estiver abrir e depois é que se adiciona a mensagem</para>
         /// </summary>
         /// <param name="mensagem">Mensagem a mostrar</param>
         private void DisplayMensagem(Mensagem mensagem)
         {
-            TextBlock mensagemTextBlock = new TextBlock {FontSize = 15};
+            TabItem destinatarioTabItem = TabItems.Find(tabItem => tabItem.Name == mensagem.Destinatario);
+            ScrollViewer destinatarioScrollViewer = (ScrollViewer) destinatarioTabItem?.Content;
+            ItemsControl destinatarioItemsControl = (ItemsControl) destinatarioScrollViewer?.Content;
+            StackPanel destinatarioStackPanel = (StackPanel) destinatarioItemsControl?.Items.GetItemAt(0);
+
+            TextBlock mensagemTextBlock = new TextBlock {FontSize = 15, TextWrapping = TextWrapping.Wrap};
             Thickness mensagemTextBlockThickness = mensagemTextBlock.Margin;
             mensagemTextBlockThickness.Top = 10;
             mensagemTextBlock.Margin = mensagemTextBlockThickness;
@@ -209,14 +207,13 @@ namespace WPFFrontendChatClient.View
             }
 
             mensagemTextBlock.Inlines.Add(" " + mensagem.Conteudo);
-            // LobyChat.Children.Add(mensagemTextBlock);
+            destinatarioStackPanel?.Children.Add(mensagemTextBlock);
 
             TextBlock dataHoraEnvioTextBlock = new TextBlock {FontSize = 9, Text = mensagem.DataHoraEnvio};
-            // LobyChat.Children.Add(dataHoraEnvioTextBlock);
+            destinatarioStackPanel?.Children.Add(dataHoraEnvioTextBlock);
 
-            // LobyScrollViewer.ScrollToBottom();
+            destinatarioScrollViewer?.ScrollToBottom();
         }
-
 
         /// <summary>
         /// Fecha o separador de Chat.
@@ -228,11 +225,10 @@ namespace WPFFrontendChatClient.View
         {
             string tabName = ((Button) sender).CommandParameter.ToString();
             if (tabName == "lobby") return;
-            TabItem item = ChatTabControl.Items.Cast<TabItem>().SingleOrDefault(i => i.Name.Equals(tabName));
-            TabItem tab = item;
+            TabItem tab = ChatTabControl.Items.Cast<TabItem>().SingleOrDefault(i => i.Name.Equals(tabName));
             if (tab == null) return;
             if (TabItems.Count <= 1) return;
-            TabItem selectedTabItem = ChatTabControl.SelectedItem as TabItem;
+            TabItem selectedTabItem = (TabItem) ChatTabControl.SelectedItem;
             ChatTabControl.DataContext = null;
             TabItems.Remove(tab);
             ChatTabControl.DataContext = TabItems;
@@ -255,7 +251,6 @@ namespace WPFFrontendChatClient.View
             string tabName = utilizador.Email.Substring(0, utilizador.Email.IndexOf("@", StringComparison.Ordinal));
             string tabHeader = $"{utilizador.Nome} ({tabName})";
             bool existeTabIgual = false;
-
             TabItems.ForEach(tab =>
             {
                 if ((string) tab.Header == tabHeader)
@@ -263,21 +258,20 @@ namespace WPFFrontendChatClient.View
                     existeTabIgual = true;
                 }
             });
-
             if (existeTabIgual) return;
             ChatTabControl.DataContext = null;
-
             int count = TabItems.Count;
             TabItem novaTabItem = new TabItem
             {
                 Header = tabHeader, Name = tabName,
                 HeaderTemplate = ChatTabControl.FindResource("TabHeader") as DataTemplate
             };
-
-            // TODO: Layout do chat
-            TextBox txt = new TextBox {Name = "txt"};
-            novaTabItem.Content = txt;
-
+            ScrollViewer chatScrollViewer = new ScrollViewer {Name = $"{tabName}ScrollViewer"};
+            ItemsControl chatItemsControl = new ItemsControl();
+            StackPanel chatStackPanel = new StackPanel {Name = $"{tabName}StackPanel"};
+            chatItemsControl.Items.Add(chatStackPanel);
+            chatScrollViewer.Content = chatItemsControl;
+            novaTabItem.Content = chatScrollViewer;
             TabItems.Insert(count, novaTabItem);
             ChatTabControl.DataContext = TabItems;
             ChatTabControl.SelectedItem = novaTabItem;
