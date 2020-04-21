@@ -46,7 +46,7 @@ namespace WPFFrontendChatClient.View
             MainViewModel.AddSeparadorEvent += AddSeparadorChat;
 
             TabItems = new List<TabItem>();
-            AddSeparadorChat(new Aluno() {Nome = "Lobby", Email = "lobby@fake"});
+            AddSeparadorChat(new Aluno {Nome = "Lobby", Email = "lobby@fake"});
         }
 
         /// <summary>
@@ -181,12 +181,16 @@ namespace WPFFrontendChatClient.View
 
         /// <summary>
         /// Recebe uma Mensagem e cria os TextBlock's para colocar no chat
-        /// <para>TODO: Detetar se o separador está aberto ou não, se não estiver abrir e depois é que se adiciona a mensagem</para>
         /// </summary>
         /// <param name="mensagem">Mensagem a mostrar</param>
         private void DisplayMensagem(Mensagem mensagem)
         {
             TabItem destinatarioTabItem = TabItems.Find(tabItem => tabItem.Name == mensagem.Destinatario);
+            if (destinatarioTabItem==null)
+            {
+                AddSeparadorChat(new Aluno{Nome = mensagem.NomeRemetente, Email = mensagem.Remetente });
+                destinatarioTabItem = TabItems.Find(tabItem => tabItem.Name == mensagem.Remetente.Substring(0, mensagem.Remetente.IndexOf("@", StringComparison.Ordinal)));
+            }
             ScrollViewer destinatarioScrollViewer = (ScrollViewer) destinatarioTabItem?.Content;
             ItemsControl destinatarioItemsControl = (ItemsControl) destinatarioScrollViewer?.Content;
             StackPanel destinatarioStackPanel = (StackPanel) destinatarioItemsControl?.Items.GetItemAt(0);
