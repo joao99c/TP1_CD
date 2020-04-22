@@ -9,5 +9,16 @@ namespace Models
         public DateTime HoraInicial { get; set; }
         public DateTime HoraFinal { get; set; }
         public ICommand AbrirSeparadorChatCommand { get; set; }
+        
+        /// <summary>
+        /// Construtor de uma Aula
+        /// </summary>
+        /// <param name="unidadeCurricular">Unidade Curricular da Aula</param>
+        /// <param name="abrirSeparadorChatCommand">Comando de abertura separador de chat</param>
+        public Aula(UnidadeCurricular unidadeCurricular, ICommand abrirSeparadorChatCommand)
+        {
+            UnidadeCurricular = unidadeCurricular;
+            AbrirSeparadorChatCommand = abrirSeparadorChatCommand;
+        }
     }
 }

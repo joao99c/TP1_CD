@@ -39,10 +39,10 @@ namespace WPFFrontendChatClient.ViewModel
         public ICommand AddAulaTeste { get; set; }
         public event AddMensagemAction AddMensagemEvent;
         public event AddSeparadorAction<Utilizador> AddSeparadorEvent;
-        public delegate void AddMensagemAction(Mensagem mensagem);
-        public delegate void AddSeparadorAction<in T>(T utilizador);
 
-        public Utilizador userOnline { get; set; }
+        public delegate void AddMensagemAction(Mensagem mensagem);
+
+        public delegate void AddSeparadorAction<in T>(T utilizador);
 
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
@@ -58,15 +58,12 @@ namespace WPFFrontendChatClient.ViewModel
             AddAlunoTeste = new RelayCommand(AddAlunoTesteAction);
             AddProfessorTeste = new RelayCommand(AddProfessorTesteAction);
             AddAulaTeste = new RelayCommand(AddAulaTesteAction);
-
-            userOnline = null;
         }
 
         /// <summary>
         /// Ação de conexão de utilizador
         /// </summary>
         /// <param name="utilizador">Utilizador a conectar</param>
-        /// <typeparam name="T">Tipo de Utilizador</typeparam>
         public void ConnectAction(Utilizador utilizador)
         {
             ServerConnectService = ServiceLocator.Current.GetInstance<ServerConnectService>();
@@ -93,11 +90,7 @@ namespace WPFFrontendChatClient.ViewModel
         // TODO: Chamar esta função no ServerConnectService quando receber mensagens
         private void AddMensagemRecebidaAction()
         {
-            Mensagens.Add(new Mensagem()
-            {
-                IdRemetente = "teste@alunos.ipca.pt", Destinatario = "lobby", Conteudo = "MSG Teste",
-                DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm"), NomeRemetente = "Teste Teste"
-            });
+            Mensagens.Add(new Mensagem("aluno1", "Aluno 1", "a15310", "Helder Carvalho", "MSG Teste"));
             AddMensagemEvent?.Invoke(Mensagens.Last());
         }
 
@@ -105,12 +98,11 @@ namespace WPFFrontendChatClient.ViewModel
         /// Cria um separador de chat privado com o utilizador escolhido
         /// </summary>
         /// <param name="utilizador">Utilizador para criar separador</param>
-        /// <typeparam name="T">Tipo de Utilizador</typeparam>
-        private void CriarSeparadorChatPrivado<T>(T utilizador) where T : Utilizador
+        private void CriarSeparadorChatPrivado(Utilizador utilizador)
         {
             AddSeparadorEvent?.Invoke(utilizador);
         }
-        
+
         /// <summary>
         /// Cria um separador de chat da Aula/UC escolhida
         /// </summary>
@@ -120,33 +112,24 @@ namespace WPFFrontendChatClient.ViewModel
             MessageBox.Show("Aula: " + aula.UnidadeCurricular.Nome, "Criar Separador Chat Aula");
         }
 
-        private int _numAux = 0;
+        private int _numAux;
 
         private void AddAlunoTesteAction()
         {
-            Alunos.Add(new Utilizador()
-            {
-                Nome = "Aluno " + ++_numAux, Email = "aluno" + _numAux + "@alunos.ipca.pt",
-                AbrirSeparadorChatCommand = new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)
-            });
+            Alunos.Add(new Utilizador("Aluno " + ++_numAux, "aluno" + _numAux, Utilizador.UserType.Aluno,
+                new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)));
         }
 
         private void AddProfessorTesteAction()
         {
-            Professores.Add(new Utilizador()
-            {
-                Nome = "Professor " + ++_numAux, Email = "professor" + _numAux + "@ipca.pt",
-                AbrirSeparadorChatCommand = new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)
-            });
+            Professores.Add(new Utilizador("Professor " + ++_numAux, "professor" + _numAux, Utilizador.UserType.Prof,
+                new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)));
         }
 
         private void AddAulaTesteAction()
         {
-            Aulas.Add(new Aula()
-            {
-                UnidadeCurricular = new UnidadeCurricular() {Nome = "UC " + ++_numAux},
-                AbrirSeparadorChatCommand = new RelayCommand<Aula>(CriarSeparadorChatAula)
-            });
+            Aulas.Add(
+                new Aula(new UnidadeCurricular("UC " + ++_numAux), new RelayCommand<Aula>(CriarSeparadorChatAula)));
         }
     }
 }

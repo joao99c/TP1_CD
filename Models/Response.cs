@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Net.Sockets;
 using System.Text;
-using Models;
 
-namespace ClassLibrary
+namespace Models
 {
     [Serializable]
     public class Response
@@ -15,16 +14,16 @@ namespace ClassLibrary
             LeaveChat,
             SendMessage,
             GetUserInfo,
+
             NewUserOnline
             // ....
         }
 
         public Operation Op { get; set; }
         public Mensagem Msg { get; set; }
-        
         public Utilizador User { get; set; }
 
-        public Response(Operation op, Utilizador user, Mensagem msg=null)
+        public Response(Operation op, Utilizador user, Mensagem msg = null)
         {
             Op = op;
             Msg = msg;
