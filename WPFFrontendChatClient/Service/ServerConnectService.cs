@@ -28,15 +28,24 @@ namespace WPFFrontendChatClient.Service
         /// </summary>
         /// <param name="utilizador">Utilizador que vai iniciar conexão</param>
         /// <typeparam name="T">Tipo de Utilizador</typeparam>
-        public void Start<T>(T utilizador)
+        public void Start(Utilizador utilizador)
         {
-            // _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
-            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+            _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            // _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
 
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipEndPoint);
-            Response<T> response = new Response<T>(Response<T>.Operation.Login, utilizador);
-            Helpers.sendSerializedMessage(_tcpClient, response);
+            Response resLogin = new Response(Response.Operation.Login, utilizador);
+            Helpers.sendSerializedMessage(_tcpClient, resLogin);
+            // Espera pela mensagem do servidor com os dados do user. (Curso, horario etc)
+            Boolean flagHaveUser = true;
+            while (flagHaveUser)
+            {
+                Response resGetUserInfo = Helpers.receiveSerializedMessage(_tcpClient);
+                MainViewModel.userOnline = resGetUserInfo.User;
+                if (MainViewModel.userOnline != null) return;
+                flagHaveUser = false;
+            }
             UpdaterAlunos();
         }
 
@@ -72,12 +81,12 @@ namespace WPFFrontendChatClient.Service
         /// </summary>
         /// <typeparam name="T">Tipo de Utilizador que vai receber</typeparam>
         /// <returns>Utilizador Online (Aluno ou Professor)</returns>
-        private T getOnlineUsers<T>() where T : Utilizador
+        private Utilizador getOnlineUsers()
         {
             while (true)
             {
                 if (_tcpClient == null) continue;
-                Response<T> response = Helpers.receiveSerializedMessage<Response<T>>(_tcpClient);
+                Response response = Helpers.receiveSerializedMessage(_tcpClient);
                 return response.User;
             }
         }
@@ -92,10 +101,10 @@ namespace WPFFrontendChatClient.Service
             {
                 while (true)
                 {
-                    Aluno novoAluno = getOnlineUsers<Aluno>();
-                    if (novoAluno != null)
+                    Utilizador novoUser = getOnlineUsers();
+                    if (novoUser != null)
                     {
-                        Aluno aluno = novoAluno;
+                        Utilizador aluno = novoUser;
                         Application.Current.Dispatcher?.Invoke(delegate { MainViewModel.AddAlunoLista(aluno); });
                     }
                 }
@@ -109,8 +118,12 @@ namespace WPFFrontendChatClient.Service
         /// <param name="mensagem">Mensagem a enviar</param>
         public void EnviarMensagem(Mensagem mensagem)
         {
-            MessageBox.Show(mensagem.NomeRemetente + " - " + mensagem.Remetente + " - " + mensagem.Conteudo + " - " +
-                            mensagem.Destinatario + " - " + mensagem.DataHoraEnvio, "ServerConnectService");
+            // MessageBox.Show(mensagem.NomeRemetente + " - " + mensagem.IdRemetente + " - " + mensagem.Conteudo + " - " +
+            //                 mensagem.Destinatario + " - " + mensagem.DataHoraEnvio, "ServerConnectService");
+            
+            
+            Response resp = new Response(Response.Operation.SendMessage, MainViewModel.userOnline,mensagem);
+            Helpers.sendSerializedMessage(_tcpClient,resp);
         }
     }
 }

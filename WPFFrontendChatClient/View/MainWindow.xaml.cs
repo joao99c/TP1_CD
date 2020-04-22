@@ -99,18 +99,18 @@ namespace WPFFrontendChatClient.View
             TextBlockUtilizadorLogado.Text += nomeTemp + " (" + EmailUtilizadorLigado + ")";
             EntrarPanel.Visibility = Visibility.Collapsed;
             ChatPanel.Visibility = Visibility.Visible;
+            Utilizador user;
             if (TextBlockUtilizadorLogado.Text.Contains("alunos"))
             {
-                Aluno a1 = new Aluno {Nome = nomeTemp, Email = EmailUtilizadorLigado};
-                MainViewModel.ConnectAction(a1);
+                user = new Utilizador(nomeTemp, EmailUtilizadorLigado, Utilizador.UserType.aluno);
             }
             else
             {
-                Professor p1 = new Professor {Nome = nomeTemp, Email = EmailUtilizadorLigado};
-                MainViewModel.ConnectAction(p1);
-
+                user = new Utilizador(nomeTemp, EmailUtilizadorLigado, Utilizador.UserType.prof);
                 // TODO: Fazer o mesmo para professores
             }
+
+            MainViewModel.ConnectAction(user);
         }
 
         /// <summary>
@@ -199,7 +199,7 @@ namespace WPFFrontendChatClient.View
             Thickness mensagemTextBlockThickness = mensagemTextBlock.Margin;
             mensagemTextBlockThickness.Top = 10;
             mensagemTextBlock.Margin = mensagemTextBlockThickness;
-            if (EmailUtilizadorLigado == mensagem.Remetente)
+            if (EmailUtilizadorLigado == mensagem.IdRemetente)
             {
                 mensagemTextBlock.Inlines.Add(new Run(mensagem.NomeRemetente + ":")
                     {FontWeight = FontWeights.Bold, TextDecorations = TextDecorations.Underline});
