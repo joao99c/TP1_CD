@@ -68,8 +68,8 @@ namespace WPFFrontendChatClient.ViewModel
         {
             ServerConnectService = ServiceLocator.Current.GetInstance<ServerConnectService>();
 
-            ServerConnectService.IpAddress = "tp1cd.ddns.net";
-            // networkService.IpAddress = "192.168.1.4";
+            // ServerConnectService.IpAddress = "tp1cd.ddns.net";
+            ServerConnectService.IpAddress = "192.168.1.4";
 
             ServerConnectService.Port = int.Parse("1000");
             Thread networkServiceThread = new Thread(() => ServerConnectService.Start(utilizador));

@@ -1,0 +1,1 @@
+{"Id":1,"Nome":"João Carvalho","Email":"a15314@alunos.ipca.pt","Horario":null,"AbrirSeparadorChatCommand":null,"UnidadeCurriculares":null,"Curso":null}
