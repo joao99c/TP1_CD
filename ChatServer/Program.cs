@@ -24,9 +24,7 @@ namespace ChatServer
         {
             public static string projectDir = Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName;
             private TcpListener TcpListener { get; set; }
-
             private List<Cliente> ClientesConectados { get; set; }
-
 
             public Server()
             {
@@ -44,8 +42,6 @@ namespace ChatServer
                     using (File.CreateText(Helpers.UsersFilePath))
                     {
                     }
-
-                    ;
                 }
 
                 // Start Listener
@@ -101,7 +97,7 @@ namespace ChatServer
                             }
 
                             // New user online
-                            addNewUserOnline(userConectado.TcpClient, user);
+                            userConectado = addNewUserOnline(userConectado, user);
                             MessageHandler(userConectado.TcpClient);
                         }
                         catch (Exception ex)
@@ -121,26 +117,31 @@ namespace ChatServer
             /// </summary>
             /// <param name="connectedTcpClient"></param>
             /// <param name="utilizadorConectar">Utilizador a adicionar</param>
-            private void addNewUserOnline(TcpClient connectedTcpClient, Utilizador utilizadorConectar)
+            private Cliente addNewUserOnline(Cliente connectedCliente, Utilizador utilizadorConectar)
             {
                 Utilizador utilizadorEncontrado = Helpers.GetUserConnected(ClientesConectados, utilizadorConectar);
-
-                ////////////////////////////////////////////////////
                 // Se for um cliente já conectado
-                if (utilizadorEncontrado != null) return;
-                Console.WriteLine("Não está online");
-                ////////////////////////////////////////////////////
+                if (utilizadorEncontrado != null)
+                {
+                    Console.WriteLine("O utilizador já estava online");
+                    connectedCliente.User = utilizadorEncontrado;
+                    return connectedCliente;
+                }
 
                 utilizadorEncontrado = Helpers.GetUserRegisted(utilizadorConectar);
                 // Se for um utilizador já registado
-                if (utilizadorEncontrado != null) return;
-                Console.WriteLine("Não está registado");
+                if (utilizadorEncontrado != null)
+                {
+                    Console.WriteLine("O utilizador já estava registado");
+                    connectedCliente.User = utilizadorEncontrado;
+                    return connectedCliente;
+                }
                 ////////////////////////////////////////////////////
 
 
                 ////////////////////////////////////////////////////
                 // É um utilizador novo:
-                //     1 - Enviar para todos os utilizadores o novo utilizador online.
+                //     1 - Refresh lista utilizadores.
                 //         1a-Enviar para todos os utilizadores o novo utilizador online.
                 //         1b-Enviar para o novo Utilizador todos os outros utilizadores online;
                 //     2 - Guardar a class do utilizador num ficheiro
@@ -160,7 +161,7 @@ namespace ChatServer
                     //2b
                     Response resParaClienteNovo =
                         new Response(Response.Operation.NewUserOnline, clienteConectado.User);
-                    Helpers.SendSerializedMessage(connectedTcpClient, resParaClienteNovo);
+                    Helpers.SendSerializedMessage(connectedCliente.TcpClient, resParaClienteNovo);
                     Console.WriteLine($"{clienteConectado.User.Nome} enviado para novo Utilizador Online!");
                 });
 
@@ -168,14 +169,15 @@ namespace ChatServer
                 // 2 
                 Helpers.SaveUserInFile(utilizadorConectar);
 
-
                 // 3
-                ClientesConectados.Add(new Cliente(utilizadorConectar, connectedTcpClient));
+                ClientesConectados.Add(new Cliente(utilizadorConectar, connectedCliente.TcpClient));
                 Console.WriteLine("O " + utilizadorConectar.Nome + " está agora online!");
 
                 // 4
                 Response resUpdateUserInfo = new Response(Response.Operation.GetUserInfo, utilizadorConectar);
-                Helpers.SendSerializedMessage(connectedTcpClient, resUpdateUserInfo);
+                Helpers.SendSerializedMessage(connectedCliente.TcpClient, resUpdateUserInfo);
+
+                return connectedCliente;
             }
 
             /// <summary>

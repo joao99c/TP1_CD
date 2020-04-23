@@ -31,20 +31,22 @@ namespace Models
             Utilizador utilizadorEncontrado = null;
             clientesConectados.ForEach(clienteConectado =>
             {
-                if (clienteConectado.User.Email != utilizadorASerProcurado.Email) return;
-                // Utilizador já conectado e registado
-                Console.WriteLine("O " + clienteConectado.User.Nome + " já estava online!");
-                utilizadorEncontrado = clienteConectado.User;
+                if (clienteConectado.User != null)
+                {
+                    if (clienteConectado.User.Email != utilizadorASerProcurado.Email) return;
+                    // Utilizador já conectado e registado
+                    Console.WriteLine("O " + clienteConectado.User.Nome + " já estava online!");
+                    utilizadorEncontrado = clienteConectado.User;
+                }
+               
             });
             return utilizadorEncontrado;
         }
 
         public static void SaveUserInFile(Utilizador utilizador)
         {
-            utilizador.Id = 1;
             // Get ID
-            var lineCount = File.ReadLines(UsersFilePath).Count();
-            utilizador.Id = lineCount + 1;
+            utilizador.Id = File.ReadLines(UsersFilePath).Count() + 1;
             using (StreamWriter sw = !File.Exists(UsersFilePath)
                 ? File.CreateText(UsersFilePath)
                 : File.AppendText(UsersFilePath))
