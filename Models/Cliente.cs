@@ -12,5 +12,10 @@ namespace Models
             User = user;
             TcpClient = tcpClient;
         }
+        public Cliente(TcpClient tcpClient)
+        {
+            User = null;
+            TcpClient = tcpClient;
+        }
     }
 }

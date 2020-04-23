@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Models;
 
 namespace ChatServer
@@ -14,53 +15,64 @@ namespace ChatServer
     {
         public static void Main(string[] args)
         {
-            Server server = new Server(1000);
+            Server server = new Server();
             server.Start();
+            while (true) ;
         }
 
         private class Server
         {
             public static string projectDir = Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName;
-            private int Port { get; set; }
             private TcpListener TcpListener { get; set; }
-            private bool Running { get; set; }
-            private TcpClient ConnectedTcpClient { get; set; }
-            private Thread ConnectionThread { get; set; }
-            private Thread MessageThread { get; set; }
+
             private List<Cliente> ClientesConectados { get; set; }
 
 
-            public Server(int port)
+            public Server()
             {
-                Port = port;
-                TcpListener = new TcpListener(IPAddress.Parse("192.168.1.4"), port);
+                TcpListener = new TcpListener(IPAddress.Parse("192.168.1.4"), 1000);
             }
 
             public void Start()
             {
-                
                 // Init
                 ClientesConectados = new List<Cliente>();
                 Directory.CreateDirectory(projectDir + "\\Chats");
                 Directory.CreateDirectory(projectDir + "\\Utilizadores");
                 if (!File.Exists(Helpers.UsersFilePath))
                 {
-                    using(File.CreateText(Helpers.UsersFilePath)){};
+                    using (File.CreateText(Helpers.UsersFilePath))
+                    {
+                    }
+
+                    ;
                 }
 
                 // Start Listener
                 TcpListener.Start();
-                Console.WriteLine("Waiting for a connection... ");
-                Running = true;
-                ConnectionThread = new Thread(() => ListenForClientConnections());
-                ConnectionThread.Start();
+                Console.WriteLine("Waiting for connections...");
+                Thread acceptTcpClientThread = new Thread(AcceptTcpClient);
+                acceptTcpClientThread.Start();
+                Thread connectionThread = new Thread(ListenForClientConnections);
+                connectionThread.Start();
             }
 
-            public void Stop()
+            private void AcceptTcpClient()
             {
-                if (!Running) return;
-                TcpListener.Stop();
-                Running = false;
+                while (true)
+                {
+                    try
+                    {
+                        var client = TcpListener.AcceptTcpClient();
+                        Console.WriteLine("Connected!");
+                        ClientesConectados.Add(new Cliente(client));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                        Console.WriteLine(ex.Message);
+                    }
+                }
             }
 
             /// <summary>
@@ -68,39 +80,48 @@ namespace ChatServer
             /// </summary>
             private void ListenForClientConnections()
             {
-                while (Running)
+                while (true)
                 {
-                    ConnectedTcpClient = TcpListener.AcceptTcpClient();
-                    Console.WriteLine("Connected!");
-
-                    // Login user and Start communications
-                    Response response = Helpers.ReceiveSerializedMessage(ConnectedTcpClient);
-                    if (response.Op == Response.Operation.Login)
+                    Parallel.ForEach(ClientesConectados, (userConectado) =>
                     {
-                        Utilizador user = new Utilizador(response.User.Nome, response.User.Email,
-                            Utilizador.UserType.Aluno);
-                        // Check if user or email using the email
-                        if (!response.User.Email.Contains("alunos"))
+                        Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
+                        try
                         {
-                            user = new Utilizador(response.User.Nome, response.User.Email,
-                                Utilizador.UserType.Prof);
+                            // Login user and Start communications
+                            Response response = Helpers.ReceiveSerializedMessage(userConectado.TcpClient);
+                            Thread.Sleep(1000); //idk
+                            if (response.Op != Response.Operation.Login) return;
+                            var user = new Utilizador(response.User.Nome, response.User.Email,
+                                Utilizador.UserType.Aluno);
+                            // Check if user or email using the email
+                            if (!response.User.Email.Contains("alunos"))
+                            {
+                                user = new Utilizador(response.User.Nome, response.User.Email,
+                                    Utilizador.UserType.Prof);
+                            }
+
+                            // New user online
+                            addNewUserOnline(userConectado.TcpClient, user);
+                            MessageHandler(userConectado.TcpClient);
                         }
-
-                        // New user online
-                        addNewUserOnline(user);
-                        MessageThread = new Thread(MessageHandler);
-
-                        MessageThread.Start();
-                    }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex);
+                            Console.WriteLine(ex.Message);
+                            Console.WriteLine($"Um utilizador foi removido!");
+                            ClientesConectados.Remove(userConectado);
+                        }
+                    });
+                    Thread.Sleep(1000);
                 }
             }
 
             /// <summary>
             /// Adiciona o Utilizador à lista de Utilizadores conectados, caso não esteja ligado
             /// </summary>
+            /// <param name="connectedTcpClient"></param>
             /// <param name="utilizadorConectar">Utilizador a adicionar</param>
-            /// <typeparam name="T">Tipo de Utilizador</typeparam>
-            private void addNewUserOnline(Utilizador utilizadorConectar)
+            private void addNewUserOnline(TcpClient connectedTcpClient, Utilizador utilizadorConectar)
             {
                 Utilizador utilizadorEncontrado = Helpers.GetUserConnected(ClientesConectados, utilizadorConectar);
 
@@ -139,7 +160,7 @@ namespace ChatServer
                     //2b
                     Response resParaClienteNovo =
                         new Response(Response.Operation.NewUserOnline, clienteConectado.User);
-                    Helpers.SendSerializedMessage(ConnectedTcpClient, resParaClienteNovo);
+                    Helpers.SendSerializedMessage(connectedTcpClient, resParaClienteNovo);
                     Console.WriteLine($"{clienteConectado.User.Nome} enviado para novo Utilizador Online!");
                 });
 
@@ -149,12 +170,12 @@ namespace ChatServer
 
 
                 // 3
-                ClientesConectados.Add(new Cliente(utilizadorConectar, ConnectedTcpClient));
+                ClientesConectados.Add(new Cliente(utilizadorConectar, connectedTcpClient));
                 Console.WriteLine("O " + utilizadorConectar.Nome + " está agora online!");
 
                 // 4
                 Response resUpdateUserInfo = new Response(Response.Operation.GetUserInfo, utilizadorConectar);
-                Helpers.SendSerializedMessage(ConnectedTcpClient, resUpdateUserInfo);
+                Helpers.SendSerializedMessage(connectedTcpClient, resUpdateUserInfo);
             }
 
             /// <summary>
@@ -162,45 +183,38 @@ namespace ChatServer
             /// <para>Recebe mensagens e trata-as de acordo com o seu tipo</para>
             /// </summary>
             /// <typeparam name="T">Tipo de Utilizador</typeparam>
-            private void MessageHandler()
+            private void MessageHandler(TcpClient connectedTcpClient)
             {
-                while (true)
+                // Get Response
+                Response response = Helpers.ReceiveSerializedMessage(connectedTcpClient);
+                switch (response.Op)
                 {
-                    // Get Response
-                    Response response = Helpers.ReceiveSerializedMessage(ConnectedTcpClient);
-                    switch (response.Op)
+                    case Response.Operation.EntrarChat:
                     {
-                        case Response.Operation.EntrarChat:
-                        {
-                            Console.WriteLine("EntrarChat");
+                        Console.WriteLine("EntrarChat");
+                        break;
+                    }
 
-
-                            break;
-                        }
-
-                        case Response.Operation.SendMessage:
-                        {
-                            SendMessage(response.Msg, response.User);
-
-
-                            break;
-                        }
-                        case Response.Operation.LeaveChat:
-                        {
-                            break;
-                        }
-                        case Response.Operation.Login:
-                        {
-                            break;
-                        }
-                        case Response.Operation.GetUserInfo:
-                        {
-                            break;
-                        }
-                        case Response.Operation.NewUserOnline:
-                        {
-                            break;
-                        }
+                    case Response.Operation.SendMessage:
+                    {
+                        SendMessage(response.Msg, response.User);
+                        break;
+                    }
+                    case Response.Operation.LeaveChat:
+                    {
+                        break;
+                    }
+                    case Response.Operation.Login:
+                    {
+                        break;
+                    }
+                    case Response.Operation.GetUserInfo:
+                    {
+                        break;
+                    }
+                    case Response.Operation.NewUserOnline:
+                    {
+                        break;
                     }
                 }
             }
