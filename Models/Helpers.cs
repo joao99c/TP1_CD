@@ -75,5 +75,25 @@ namespace Models
 
             return null;
         }
+
+
+        public static void SaveMessageInFile(Mensagem mensagem, string filename)
+        {
+            string projectDirectory = $"{Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName}\\Chats\\";
+
+            // Create a file to write to.
+            using (StreamWriter sw = !File.Exists(projectDirectory + filename)
+                ? File.CreateText(projectDirectory + filename)
+                : File.AppendText(projectDirectory + filename))
+            {
+                // De: 
+                sw.Write($"E:{mensagem.IdRemetente}");
+                // Para:
+                sw.Write($" R:{mensagem.IdDestinatario}");
+                // Mensagem
+                sw.Write($" \"{mensagem.Conteudo.Trim()}\" \"{mensagem.DataHoraEnvio}\"\n");
+                // Horas
+            }
+        }
     }
 }

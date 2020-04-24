@@ -9,6 +9,8 @@ namespace Models
         public string Email { get; set; }
         public Horario Horario { get; set; }
         public ICommand AbrirSeparadorChatCommand { get; set; }
+        
+        // Aluno: Uc's extras        // Professor: Uc's lecionadas
         public UnidadeCurricular[] UnidadeCurriculares { get; set; }
         public Curso Curso { get; set; }
         public bool IsOnline { get; set; }

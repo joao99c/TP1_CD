@@ -15,9 +15,11 @@ namespace ChatServer
     {
         public static void Main(string[] args)
         {
-            Server server = new Server();
+            var server = new Server();
             server.Start();
-            while (true) ;
+            while (true)
+            {
+            }
         }
 
         private class Server
@@ -26,7 +28,7 @@ namespace ChatServer
                 Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName;
 
             private TcpListener TcpListener { get; set; }
-            private List<Cliente> ClientesConectados { get; set; }
+            public List<Cliente> ClientesConectados { get; set; }
 
             public Server()
             {
@@ -48,8 +50,7 @@ namespace ChatServer
 
                 // Start Listener
                 TcpListener.Start();
-                Console.WriteLine("Waiting for connections...");
-                Thread acceptTcpClientThread = new Thread(AcceptTcpClient);
+                var acceptTcpClientThread = new Thread(AcceptTcpClient);
                 acceptTcpClientThread.Start();
             }
 
@@ -59,9 +60,13 @@ namespace ChatServer
                 {
                     try
                     {
+                        Console.WriteLine("Waiting for connections...");
                         TcpClient client = TcpListener.AcceptTcpClient();
                         Console.WriteLine("Connected!");
                         ClientesConectados.Add(new Cliente(client));
+                        Console.WriteLine(GetState(client));
+
+                        Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
                         Thread connectionThread = new Thread(ListenForClientConnections);
                         connectionThread.Start();
                     }
@@ -82,13 +87,13 @@ namespace ChatServer
                 {
                     Parallel.ForEach(ClientesConectados, clienteConectado =>
                     {
-                        Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
                         try
                         {
                             // Login user and Start communications
                             Response response = Helpers.ReceiveSerializedMessage(clienteConectado.TcpClient);
                             Thread.Sleep(1000); //idk
                             if (response.Op != Response.Operation.Login) return;
+
                             Utilizador user = new Utilizador(response.User.Nome, response.User.Email,
                                 Utilizador.UserType.Aluno);
                             // Check if user or email using the email
@@ -218,66 +223,85 @@ namespace ChatServer
                     {
                         break;
                     }
+                    case Response.Operation.BlockLogin:
+                        break;
+
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
-        }
 
-        /// <summary>
-        /// Trata da Mensagem recebida de um Utilizador (mensagem que o servidor recebe)
-        /// <para>Guarda a Mensagem no ficheiro e envia para o destinatário caso este esteja online</para>
-        /// TODO: NÃO FUNCIONA!
-        /// TODO: É necessário colocar o Id do Utilizador a funcionar antes de modificar esta função
-        /// TODO:  - Para isso é necessário guardar os Utilizadores e atribuir-lhes Id's quando entram pela primeira vez
-        /// TODO: No fim disto tudo é necessário juntar os Id's e criar o ficheiro, guardar a Mensagem nesse ficheiro e
-        /// TODO: enviar ao destinatário caso esteja online
-        /// </summary>
-        /// <param name="mensagem"></param>
-        /// <param name="utilizador"></param>
-        private static void SendMessage(Mensagem mensagem, Utilizador utilizador)
-        {
-            string projectDirectory = Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + $"\\Chats\\";
 
-            mensagem.IdRemetente = "10";
-            // Nome do ficheiro
-            // aula10 = aula de cd
-            // 15310_15315 = mensagem privada
-            string filename = "";
-
-            if (mensagem.IdDestinatario.Contains("aula"))
+            
+            /// <summary>
+            /// Trata da Mensagem recebida de um Utilizador (mensagem que o servidor recebe)
+            /// <para>Guarda a Mensagem no ficheiro e envia para o destinatário caso este esteja online</para>
+            /// TODO: NÃO FUNCIONA!
+            /// TODO: É necessário colocar o Id do Utilizador a funcionar antes de modificar esta função
+            /// TODO:  - Para isso é necessário guardar os Utilizadores e atribuir-lhes Id's quando entram pela primeira vez
+            /// TODO: No fim disto tudo é necessário juntar os Id's e criar o ficheiro, guardar a Mensagem nesse ficheiro e
+            /// TODO: enviar ao destinatário caso esteja online
+            /// </summary>
+            /// <param name="mensagem"></param>
+            /// <param name="utilizador"></param>
+            private void SendMessage(Mensagem mensagem, Utilizador utilizador)
             {
-                filename += mensagem.NomeDestinatario + ".txt";
-            }
-            else
-            {
-                int num1 = int.Parse(mensagem.IdDestinatario);
-                int num2 = int.Parse(mensagem.IdRemetente);
-                if (num1 > num2)
+                // Filename:
+                    // Aula: aula10
+                    // MP: 15310_15315 
+                    // Lobby: idDestinatario = 0 
+                
+                string filename = null;
+                Response resMsgToDestinatario = new Response(Response.Operation.SendMessage, utilizador, mensagem);
+
+                if (mensagem.IdDestinatario.Contains("aula"))
                 {
-                    filename += num2 + "_" + num1 + ".txt";
+                    // Nome do ficheiro = idDestinatario - ex.: aula1 onde 1 é o id da aula
+                    filename += mensagem.IdDestinatario + ".txt";
+                    int idAula = int.Parse(mensagem.IdDestinatario.Remove(0, 4));
+                    // Todos os utilizadores na aula e online
+                    ClientesConectados.FindAll(cliente =>
+                        cliente.User.IsOnline &&
+                        (cliente.User.Curso.UnidadesCurriculares.Find(uc => uc.Id == idAula) != null)
+                    ).ForEach(alunoEmAula =>
+                    {
+                        if (alunoEmAula.User.Email == utilizador.Email) return;
+                        Helpers.SendSerializedMessage(alunoEmAula.TcpClient, resMsgToDestinatario);
+                    });
+                    Helpers.SaveMessageInFile(mensagem, filename);
+                }
+                else if (int.Parse(mensagem.IdDestinatario) == 0) // LOBBY
+                {
+                    ClientesConectados.ForEach(cliente =>
+                    {
+                        if (cliente.User.IsOnline)
+                        {
+                            // Não envia para ele proprio
+                            if (cliente.User.Email == utilizador.Email) return;
+                            Helpers.SendSerializedMessage(cliente.TcpClient, resMsgToDestinatario);
+                        }
+                    });
+                    // NAO GUARDA EM FICHEIRO
                 }
                 else
                 {
-                    filename += num1 + "_" + num2 + ".txt";
+                    if (int.Parse(mensagem.IdDestinatario) > int.Parse(mensagem.IdRemetente))
+                    {
+                        filename += int.Parse(mensagem.IdRemetente) + "_" + int.Parse(mensagem.IdDestinatario) + ".txt";
+                    }
+                    else
+                    {
+                        filename += int.Parse(mensagem.IdDestinatario) + "_" + int.Parse(mensagem.IdRemetente) + ".txt";
+                    }
+
+                    Cliente destinatario = ClientesConectados.Find(cliente =>
+                        cliente.User.IsOnline && cliente.User.Id == int.Parse(mensagem.IdDestinatario));
+
+                    Helpers.SendSerializedMessage(destinatario.TcpClient, resMsgToDestinatario);
+                    Helpers.SaveMessageInFile(mensagem, filename);
                 }
             }
-
-            Console.WriteLine(projectDirectory + filename);
-
-            // Create a file to write to.
-            using (StreamWriter sw = !File.Exists(projectDirectory + filename)
-                ? File.CreateText(projectDirectory + filename)
-                : File.AppendText(projectDirectory + filename))
-            {
-                // De: 
-                sw.Write($"E:{mensagem.IdRemetente}");
-                // Para:
-                sw.Write($" R:{mensagem.IdDestinatario}");
-                // Mensagem
-                sw.Write($" \"{mensagem.Conteudo.Trim()}\" \"{mensagem.DataHoraEnvio}\"\n");
-                // Horas
-            }
         }
-
 
         public static TcpState GetState(TcpClient tcpClient)
         {

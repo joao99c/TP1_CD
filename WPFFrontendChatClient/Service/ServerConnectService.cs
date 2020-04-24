@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Windows;
 using Models;
+using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.Service
 {
@@ -19,6 +20,11 @@ namespace WPFFrontendChatClient.Service
 
         public delegate void AddAlunoAction(Utilizador utilizador);
 
+        public event AddMensagemAction AddMensagemEvent;
+
+        public delegate void AddMensagemAction(Mensagem mensagem);
+
+
         public ServerConnectService()
         {
         }
@@ -29,8 +35,8 @@ namespace WPFFrontendChatClient.Service
         /// <param name="utilizador">Utilizador que vai iniciar conexão</param>
         public void Start(Utilizador utilizador)
         {
-            // _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
-            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+            _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            // _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
 
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipEndPoint);
@@ -45,66 +51,63 @@ namespace WPFFrontendChatClient.Service
                 flagHaveUser = false;
             }
 
-            UpdaterAlunos();
+            MessageHandler();
         }
 
-        private static void Receive(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        private void MessageHandler()
         {
-            int startTickCount = Environment.TickCount;
-            int received = 0; // how many bytes is already received
-            do
-            {
-                if (Environment.TickCount > startTickCount + timeout)
-                    throw new Exception("Timeout.");
-                try
-                {
-                    received += socket.Receive(buffer, offset + received, size - received, SocketFlags.None);
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock ||
-                        ex.SocketErrorCode == SocketError.IOPending ||
-                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
-                    {
-                        // socket buffer is probably empty, wait and try again
-                        Thread.Sleep(30);
-                    }
-                    else
-                        throw ex; // any serious error occurr
-                }
-            } while (received < size);
-        }
-
-        /// <summary>
-        /// Obtém os Utilizadores Online (1 de cada vez)
-        /// </summary>
-        /// <returns>Utilizador Online (Aluno ou Professor)</returns>
-        private Utilizador getOnlineUsers()
-        {
-            while (true)
-            {
-                if (_tcpClient == null) continue;
-                Response response = Helpers.ReceiveSerializedMessage(_tcpClient);
-                return response.User;
-            }
-        }
-
-        /// <summary>
-        /// Thread que fica à escuta de novos Alunos
-        /// <para>Assim que um Aluno se conectar ao servidor, este envia-o para ser adicionado à lista de Alunos Online</para>
-        /// </summary>
-        private void UpdaterAlunos()
-        {
-            Thread userListAutoRefresh = new Thread(() =>
+            Thread messageHandlerThread = new Thread(() =>
             {
                 while (true)
                 {
-                    Utilizador novoUser = getOnlineUsers();
-                    Application.Current.Dispatcher?.Invoke(delegate { AddAlunoEvent?.Invoke(novoUser); });
+                    // Get Response
+                    Response response = Helpers.ReceiveSerializedMessage(_tcpClient);
+                    switch (response.Op)
+                    {
+                        case Response.Operation.EntrarChat:
+                        {
+                            Console.WriteLine("EntrarChat");
+                            break;
+                        }
+
+                        case Response.Operation.SendMessage:
+                        {
+                            Application.Current.Dispatcher?.Invoke(delegate
+                            {
+                                AddMensagemEvent?.Invoke(response.Msg);
+                            });
+                            break;
+                        }
+                        case Response.Operation.LeaveChat:
+                        {
+                            break;
+                        }
+                        case Response.Operation.Login:
+                        {
+                            break;
+                        }
+                        case Response.Operation.GetUserInfo:
+                        {
+                            break;
+                        }
+                        case Response.Operation.NewUserOnline:
+                        {
+                            Application.Current.Dispatcher?.Invoke(delegate { AddAlunoEvent?.Invoke(response.User); });
+                            break;
+                        }
+                        case Response.Operation.BlockLogin:
+                            break;
+
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
                 }
             });
-            userListAutoRefresh.Start();
+            messageHandlerThread.Start();
         }
+        
+
+
 
         /// <summary>
         /// Envia a Mensagem para o servidor
