@@ -1,4 +1,3 @@
-using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -33,16 +32,14 @@ namespace WPFFrontendChatClient.ViewModel
         public ObservableCollection<Utilizador> Professores { get; set; }
         public ObservableCollection<Aula> Aulas { get; set; }
         private ObservableCollection<Mensagem> Mensagens { set; get; }
-        public ICommand AddAlunoTeste { get; set; }
         public ICommand AddProfessorTeste { get; set; }
-        public ICommand AddMensagemTeste { get; set; }
         public ICommand AddAulaTeste { get; set; }
         public event AddMensagemAction AddMensagemEvent;
-        public event AddSeparadorAction<Utilizador> AddSeparadorEvent;
+        public event AddSeparadorAction AddSeparadorEvent;
 
         public delegate void AddMensagemAction(Mensagem mensagem);
 
-        public delegate void AddSeparadorAction<in T>(T utilizador);
+        public delegate void AddSeparadorAction(Utilizador utilizador);
 
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
@@ -54,8 +51,6 @@ namespace WPFFrontendChatClient.ViewModel
             Professores = new ObservableCollection<Utilizador>();
             Mensagens = new ObservableCollection<Mensagem>();
 
-            AddMensagemTeste = new RelayCommand(AddMensagemRecebidaAction);
-            AddAlunoTeste = new RelayCommand(AddAlunoTesteAction);
             AddProfessorTeste = new RelayCommand(AddProfessorTesteAction);
             AddAulaTeste = new RelayCommand(AddAulaTesteAction);
         }
@@ -67,9 +62,10 @@ namespace WPFFrontendChatClient.ViewModel
         public void ConnectAction(Utilizador utilizador)
         {
             ServerConnectService = ServiceLocator.Current.GetInstance<ServerConnectService>();
+            ServerConnectService.AddAlunoEvent += AddAlunoLista;
 
-            // ServerConnectService.IpAddress = "tp1cd.ddns.net";
-            ServerConnectService.IpAddress = "192.168.1.4";
+            ServerConnectService.IpAddress = "tp1cd.ddns.net";
+            // ServerConnectService.IpAddress = "192.168.1.4";
 
             ServerConnectService.Port = int.Parse("1000");
             Thread networkServiceThread = new Thread(() => ServerConnectService.Start(utilizador));
@@ -80,8 +76,9 @@ namespace WPFFrontendChatClient.ViewModel
         /// Função que adiciona Alunos à lista de alunos Online
         /// </summary>
         /// <param name="alunoAdicionar">Aluno a adicionar à lista de alunos Online</param>
-        public void AddAlunoLista(Utilizador alunoAdicionar)
+        private void AddAlunoLista(Utilizador alunoAdicionar)
         {
+            alunoAdicionar.AbrirSeparadorChatCommand = new RelayCommand<Utilizador>(CriarSeparadorChatPrivado);
             Alunos.Add(alunoAdicionar);
         }
 
@@ -90,7 +87,8 @@ namespace WPFFrontendChatClient.ViewModel
         // TODO: Chamar esta função no ServerConnectService quando receber mensagens
         private void AddMensagemRecebidaAction()
         {
-            Mensagens.Add(new Mensagem("aluno1", "Aluno 1", "a15310", "Helder Carvalho", "MSG Teste"));
+            Mensagens.Add(new Mensagem("10", "Aluno 10", "aluno10@alunos.ipca.pt", "2", "Helder Carvalho",
+                "MSG Teste"));
             AddMensagemEvent?.Invoke(Mensagens.Last());
         }
 
@@ -114,15 +112,10 @@ namespace WPFFrontendChatClient.ViewModel
 
         private int _numAux;
 
-        private void AddAlunoTesteAction()
-        {
-            Alunos.Add(new Utilizador("Aluno " + ++_numAux, "aluno" + _numAux, Utilizador.UserType.Aluno,
-                new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)));
-        }
-
         private void AddProfessorTesteAction()
         {
-            Professores.Add(new Utilizador("Professor " + ++_numAux, "professor" + _numAux, Utilizador.UserType.Prof,
+            Professores.Add(new Utilizador(++_numAux, "Professor " + _numAux, "professor" + _numAux,
+                Utilizador.UserType.Prof,
                 new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)));
         }
 

@@ -11,19 +11,24 @@ namespace Models
         public ICommand AbrirSeparadorChatCommand { get; set; }
         public UnidadeCurricular[] UnidadeCurriculares { get; set; }
         public Curso Curso { get; set; }
-        private readonly UserType _tipoUtilizador;
-        public enum UserType 
+        public bool IsOnline { get; set; }
+        public UserType TipoUtilizador { get; set; }
+
+        public enum UserType
         {
-            Aluno, Prof
+            Aluno,
+            Prof
         }
-        
+
         /// <summary>
         /// Construtor utilizado pelo Deserialize
         /// </summary>
-        public Utilizador(){}
+        public Utilizador()
+        {
+        }
 
         /// <summary>
-        /// Construtor de um Utilizador sem Tipo
+        /// Construtor de um Utilizador
         /// </summary>
         /// <param name="nome">Nome do Utilizador</param>
         /// <param name="email">Email do Utilizador</param>
@@ -32,7 +37,20 @@ namespace Models
             Nome = nome;
             Email = email;
         }
-        
+
+        /// <summary>
+        /// Construtor de um Utilizador
+        /// </summary>
+        /// <param name="id">Id do Utilizador</param>
+        /// <param name="nome">Nome do Utilizador</param>
+        /// <param name="email">Email do Utilizador</param>
+        public Utilizador(int id, string nome, string email)
+        {
+            Id = id;
+            Nome = nome;
+            Email = email;
+        }
+
         /// <summary>
         /// Construtor de um Utilizador
         /// </summary>
@@ -43,22 +61,25 @@ namespace Models
         {
             Nome = nome;
             Email = email;
-            _tipoUtilizador = tipoUtilizador;
+            TipoUtilizador = tipoUtilizador;
         }
 
         /// <summary>
         /// Construtor de um Utilizador com comando de abertura de chat
         /// </summary>
+        /// <param name="id">Id do Utilizador</param>
         /// <param name="nome">Nome do Utilizador</param>
         /// <param name="email">Email do Utilizador</param>
         /// <param name="tipoUtilizador">Tipo de Utilizador</param>
         /// <param name="abrirSeparadorChatCommand">Comando de abertura separador de chat</param>
-        public Utilizador(string nome, string email, UserType tipoUtilizador, ICommand abrirSeparadorChatCommand)
+        public Utilizador(int id, string nome, string email, UserType tipoUtilizador,
+            ICommand abrirSeparadorChatCommand)
         {
+            Id = id;
             Nome = nome;
             Email = email;
             AbrirSeparadorChatCommand = abrirSeparadorChatCommand;
-            _tipoUtilizador = tipoUtilizador;
+            TipoUtilizador = tipoUtilizador;
         }
     }
 }

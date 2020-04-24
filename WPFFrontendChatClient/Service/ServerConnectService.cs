@@ -3,26 +3,24 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Windows;
-using CommonServiceLocator;
 using Models;
-using WPFFrontendChatClient.View;
-using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.Service
 {
     public class ServerConnectService
     {
-        private MainViewModel MainViewModel { get; set; }
-        private MainWindow MainWindow { get; set; }
         private TcpClient _tcpClient;
         private IPEndPoint _ipEndPoint;
         public string IpAddress { get; set; }
         public int Port { get; set; }
         public Utilizador UtilizadorLigado { get; set; }
 
+        public event AddAlunoAction AddAlunoEvent;
+
+        public delegate void AddAlunoAction(Utilizador utilizador);
+
         public ServerConnectService()
         {
-            MainViewModel = ServiceLocator.Current.GetInstance<MainViewModel>();
         }
 
         /// <summary>
@@ -31,8 +29,8 @@ namespace WPFFrontendChatClient.Service
         /// <param name="utilizador">Utilizador que vai iniciar conexão</param>
         public void Start(Utilizador utilizador)
         {
-            _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
-            // _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+            // _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
 
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipEndPoint);
@@ -44,7 +42,6 @@ namespace WPFFrontendChatClient.Service
             {
                 Response resGetUserInfo = Helpers.ReceiveSerializedMessage(_tcpClient);
                 UtilizadorLigado = resGetUserInfo.User;
-                if (UtilizadorLigado != null) return;
                 flagHaveUser = false;
             }
 
@@ -103,8 +100,7 @@ namespace WPFFrontendChatClient.Service
                 while (true)
                 {
                     Utilizador novoUser = getOnlineUsers();
-                    if (novoUser == null) continue;
-                    Application.Current.Dispatcher?.Invoke(delegate { MainViewModel.AddAlunoLista(novoUser); });
+                    Application.Current.Dispatcher?.Invoke(delegate { AddAlunoEvent?.Invoke(novoUser); });
                 }
             });
             userListAutoRefresh.Start();
@@ -117,7 +113,7 @@ namespace WPFFrontendChatClient.Service
         public void EnviarMensagem(Mensagem mensagem)
         {
             Response resp = new Response(Response.Operation.SendMessage, UtilizadorLigado, mensagem);
-            // Helpers.SendSerializedMessage(_tcpClient, resp);
+            Helpers.SendSerializedMessage(_tcpClient, resp);
         }
     }
 }

@@ -103,13 +103,9 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Button Command="{Binding AddAlunoTeste}" Content="Adicionar Aluno (Teste)"
-                            HorizontalAlignment="Left" Margin="0,0,5,0" />
                     <Button Command="{Binding AddProfessorTeste}" Content="Adicionar Professor (Teste)"
                             HorizontalAlignment="Left" Margin="0,0,5,0" />
                     <Button Command="{Binding AddAulaTeste}" Content="Adicionar Aula (Teste)"
-                            HorizontalAlignment="Left" Margin="0,0,5,0" />
-                    <Button Command="{Binding AddMensagemTeste}" Content="Adicionar Mensagem (Teste)"
                             HorizontalAlignment="Left" Margin="0,0,5,0" />
                     <TextBlock Name="TextBlockUtilizadorLogado" VerticalAlignment="Center" FontWeight="Bold" />
                 </StackPanel>
@@ -140,13 +136,13 @@
                         </DockPanel>
                     </DataTemplate>
                     <Style TargetType="ScrollViewer">
-                        <Setter Property="VerticalScrollBarVisibility" Value="Auto"></Setter>
+                        <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
                     </Style>
                     <Style TargetType="ItemsControl">
-                        <Setter Property="VerticalAlignment" Value="Bottom"></Setter>
+                        <Setter Property="VerticalAlignment" Value="Bottom" />
                     </Style>
                     <Style TargetType="StackPanel">
-                        <Setter Property="Orientation" Value="Vertical"></Setter>
+                        <Setter Property="Orientation" Value="Vertical" />
                     </Style>
                 </TabControl.Resources>
             </TabControl>

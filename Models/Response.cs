@@ -10,6 +10,7 @@ namespace Models
         public enum Operation
         {
             Login,
+            BlockLogin,
             EntrarChat,
             LeaveChat,
             SendMessage,
