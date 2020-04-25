@@ -1,6 +1,5 @@
+using System;
 using System.Collections.ObjectModel;
-using System.Threading;
-using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 using CommonServiceLocator;
@@ -32,9 +31,8 @@ namespace WPFFrontendChatClient.ViewModel
         public ObservableCollection<Aula> Aulas { get; set; }
         private ObservableCollection<Mensagem> Mensagens { set; get; }
         public ICommand AddProfessorTeste { get; set; }
-        public ICommand AddAulaTeste { get; set; }
 
-        public delegate void AddSeparadorAction(Utilizador utilizador);
+        public delegate void AddSeparadorAction(string displayName, string displayId, string idName);
 
         public event AddSeparadorAction AddSeparadorEvent;
 
@@ -53,7 +51,6 @@ namespace WPFFrontendChatClient.ViewModel
             Mensagens = new ObservableCollection<Mensagem>();
 
             AddProfessorTeste = new RelayCommand(AddProfessorTesteAction);
-            AddAulaTeste = new RelayCommand(AddAulaTesteAction);
         }
 
         /// <summary>
@@ -65,13 +62,13 @@ namespace WPFFrontendChatClient.ViewModel
             ServerConnectService = ServiceLocator.Current.GetInstance<ServerConnectService>();
             ServerConnectService.AddAlunoEvent += AddAlunoLista;
             ServerConnectService.AddMensagemRecebidaEventScs += AddMensagemRecebidaChat;
+            ServerConnectService.AddUnidadeCurricularEvent += AddUnidadeCurricularLista;
 
             // ServerConnectService.IpAddress = "tp1cd.ddns.net";
             ServerConnectService.IpAddress = "192.168.1.4";
 
             ServerConnectService.Port = int.Parse("1000");
-            Thread networkServiceThread = new Thread(() => ServerConnectService.Start(utilizador));
-            networkServiceThread.Start();
+            ServerConnectService.Start(utilizador);
         }
 
         /// <summary>
@@ -96,25 +93,36 @@ namespace WPFFrontendChatClient.ViewModel
         }
 
         /// <summary>
+        /// Adiciona Unidades Curriculares à lista de Aulas
+        /// </summary>
+        /// <param name="unidadeCurricular">Unidade Curricular a adicionar</param>
+        private void AddUnidadeCurricularLista(UnidadeCurricular unidadeCurricular)
+        {
+            Aulas.Add(new Aula(unidadeCurricular, new RelayCommand<Aula>(CriarSeparadorChatAula)));
+        }
+
+        /// <summary>
         /// Cria um separador de chat privado com o utilizador escolhido
         /// </summary>
         /// <param name="utilizador">Utilizador para criar separador</param>
         private void CriarSeparadorChatPrivado(Utilizador utilizador)
         {
-            AddSeparadorEvent?.Invoke(utilizador);
+            AddSeparadorEvent?.Invoke(utilizador.Nome,
+                utilizador.Email.Substring(0, utilizador.Email.IndexOf("@", StringComparison.Ordinal)),
+                utilizador.Id.ToString().Insert(0, "id"));
         }
 
         /// <summary>
         /// Cria um separador de chat da Aula/UC escolhida
-        /// TODO: Colocar a funcionar.
         /// </summary>
         /// <param name="aula">Aula para criar separador</param>
         private void CriarSeparadorChatAula(Aula aula)
         {
-            MessageBox.Show("Aula: " + aula.UnidadeCurricular.Nome, "Criar Separador Chat Aula");
+            AddSeparadorEvent?.Invoke(aula.UnidadeCurricular.Nome, null,
+                aula.UnidadeCurricular.Id.ToString().Insert(0, "uc"));
         }
 
-        // TEST STUFF
+        // TEST STUFF --------------------------------------------------------------------------------------------------
 
         private int _numAux;
 
@@ -123,12 +131,6 @@ namespace WPFFrontendChatClient.ViewModel
             Professores.Add(new Utilizador(++_numAux, "Professor " + _numAux, "professor" + _numAux,
                 Utilizador.UserType.Prof,
                 new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)));
-        }
-
-        private void AddAulaTesteAction()
-        {
-            Aulas.Add(
-                new Aula(new UnidadeCurricular("UC " + ++_numAux), new RelayCommand<Aula>(CriarSeparadorChatAula)));
         }
     }
 }

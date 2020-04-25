@@ -39,7 +39,7 @@ namespace WPFFrontendChatClient.View
             MainViewModel.AddMensagemRecebidaEventMvm += DisplayMensagemRecebida;
             MainViewModel.AddSeparadorEvent += AddSeparadorChat;
             TabItems = new List<TabItem>();
-            AddSeparadorChat(new Utilizador("Lobby", "lobby@program"));
+            AddSeparadorChat("Lobby", "lobby", "id0");
         }
 
         /// <summary>
@@ -87,11 +87,11 @@ namespace WPFFrontendChatClient.View
             if (authResult == null) return;
             string nomeTemp = await GetHttpContentWithToken(GraphApiEndpoint, authResult.AccessToken);
             string emailUtilizadorLigadoTemp = authResult.Account.Username;
-            TextBlockUtilizadorLogado.Text = "";
-            TextBlockUtilizadorLogado.Text += nomeTemp + " (" + emailUtilizadorLigadoTemp + ")";
+            TextBlockUtilizadorLigado.Text = "";
+            TextBlockUtilizadorLigado.Text += nomeTemp + " (" + emailUtilizadorLigadoTemp + ")";
             EntrarPanel.Visibility = Visibility.Collapsed;
             ChatPanel.Visibility = Visibility.Visible;
-            var user = TextBlockUtilizadorLogado.Text.Contains("alunos")
+            var user = TextBlockUtilizadorLigado.Text.Contains("alunos")
                 ? new Utilizador(nomeTemp, emailUtilizadorLigadoTemp, Utilizador.UserType.Aluno)
                 : new Utilizador(nomeTemp, emailUtilizadorLigadoTemp, Utilizador.UserType.Prof);
             MainViewModel.ConnectAction(user);
@@ -103,7 +103,7 @@ namespace WPFFrontendChatClient.View
         /// <param name="url">API URL</param>
         /// <param name="token">Token de acesso</param>
         /// <returns>Primeiro e último nome do Utilizador</returns>
-        private async Task<string> GetHttpContentWithToken(string url, string token)
+        private static async Task<string> GetHttpContentWithToken(string url, string token)
         {
             HttpClient httpClient = new HttpClient();
             try
@@ -173,12 +173,14 @@ namespace WPFFrontendChatClient.View
         {
             TabItem mensagemTabItem =
                 mensagem.IdDestinatario == MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString()
-                    ? TabItems.Find(tabItem => tabItem.Name == "ID" + mensagem.IdRemetente)
-                    : TabItems.Find(tabItem => tabItem.Name == "ID" + mensagem.IdDestinatario);
+                    ? TabItems.Find(tabItem => tabItem.Name == "id" + mensagem.IdRemetente)
+                    : TabItems.Find(tabItem => tabItem.Name == "id" + mensagem.IdDestinatario);
             if (mensagemTabItem == null)
             {
-                AddSeparadorChat(new Utilizador(int.Parse(mensagem.IdRemetente), mensagem.NomeRemetente,
-                    mensagem.EmailRemetente));
+                AddSeparadorChat(mensagem.NomeRemetente,
+                    mensagem.EmailRemetente.Substring(0,
+                        mensagem.EmailRemetente.IndexOf("@", StringComparison.Ordinal)),
+                    mensagem.IdRemetente.Insert(0, "id"));
                 mensagemTabItem = TabItems.Last();
             }
 
@@ -219,7 +221,7 @@ namespace WPFFrontendChatClient.View
         private void CloseTabButton_OnClick(object sender, RoutedEventArgs e)
         {
             string tabName = ((Button) sender).CommandParameter.ToString();
-            if (tabName == "lobby") return;
+            if (tabName == "id0") return; // Se for o Lobby
             TabItem tab = ChatTabControl.Items.Cast<TabItem>().SingleOrDefault(i => i.Name.Equals(tabName));
             if (tab == null) return;
             if (TabItems.Count <= 1) return;
@@ -239,11 +241,12 @@ namespace WPFFrontendChatClient.View
         /// Adiciona um separador de chat.
         /// <para>Se o separador já existir não adiciona.</para>
         /// </summary>
-        /// <param name="utilizador">Utilizador do separador (Destinatário)</param>
-        private void AddSeparadorChat(Utilizador utilizador)
+        /// <param name="displayName">Nome a mostrar no título do separador</param>
+        /// <param name="displayId">Id a mostrar no titulo do separador</param>
+        /// <param name="idName">Id a colocar no Name (identificador) do separador</param>
+        private void AddSeparadorChat(string displayName, string displayId, string idName)
         {
-            string tabHeader =
-                $"{utilizador.Nome} ({utilizador.Email.Substring(0, utilizador.Email.IndexOf("@", StringComparison.Ordinal))})";
+            string tabHeader = displayId == null ? displayName : $"{displayName} ({displayId})";
             bool existeTabIgual = false;
             TabItems.ForEach(tab =>
             {
@@ -255,7 +258,7 @@ namespace WPFFrontendChatClient.View
             if (existeTabIgual) return;
             ChatTabControl.DataContext = null;
             int count = TabItems.Count;
-            string nameId = utilizador.Id.ToString().Insert(0, "ID");
+            string nameId = idName;
             TabItem novaTabItem = new TabItem
             {
                 Header = tabHeader, Name = nameId,

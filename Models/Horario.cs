@@ -10,6 +10,13 @@
         public Aula[] Sabado { get; set; }
 
         /// <summary>
+        /// Construtor utilizado pelo Deserialize
+        /// </summary>
+        public Horario()
+        {
+        }
+
+        /// <summary>
         /// Construtor de um Horário
         /// </summary>
         /// <param name="segundaFeira">Aulas da Segunda-feira (Array)</param>

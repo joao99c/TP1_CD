@@ -16,22 +16,22 @@ namespace Models
             NewUserOnline
         }
 
-        public Operation Operacão { get; set; }
+        public Operation Operacao { get; set; }
         public Mensagem Mensagem { get; set; }
         public Utilizador Utilizador { get; set; }
 
         /// <summary>
         /// Construtor de uma Response
         /// </summary>
-        /// <param name="operacão">Operação</param>
+        /// <param name="operacao">Operação</param>
         /// <param name="utilizador">Utilizador que a cria</param>
         /// <param name="mensagem">Mensagem da Response</param>
-        public Response(Operation operacão, Utilizador utilizador, Mensagem mensagem = null)
+        public Response(Operation operacao, Utilizador utilizador, Mensagem mensagem = null)
         {
-            Operacão = operacão;
+            Operacao = operacao;
             Mensagem = mensagem;
             Utilizador = utilizador;
-            switch (operacão)
+            switch (operacao)
             {
                 case Operation.EntrarChat:
                 {

@@ -105,9 +105,7 @@
                 <StackPanel Grid.Column="0" Orientation="Horizontal">
                     <Button Command="{Binding AddProfessorTeste}" Content="Adicionar Professor (Teste)"
                             HorizontalAlignment="Left" Margin="0,0,5,0" />
-                    <Button Command="{Binding AddAulaTeste}" Content="Adicionar Aula (Teste)"
-                            HorizontalAlignment="Left" Margin="0,0,5,0" />
-                    <TextBlock Name="TextBlockUtilizadorLogado" VerticalAlignment="Center" FontWeight="Bold" />
+                    <TextBlock Name="TextBlockUtilizadorLigado" VerticalAlignment="Center" FontWeight="Bold" />
                 </StackPanel>
                 <Button Click="ButtonSair_Click" Content="🚪" Grid.Column="1" FontSize="15" Background="Transparent"
                         BorderThickness="0" Margin="10,0,0,0" />

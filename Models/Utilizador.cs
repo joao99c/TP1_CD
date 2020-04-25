@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿using System.Collections.Generic;
+using System.Windows.Input;
 
 namespace Models
 {
@@ -14,7 +15,7 @@ namespace Models
          * Aluno: UC's extras
          * Professor: UC's lecionadas
          */
-        public UnidadeCurricular[] UnidadeCurriculares { get; set; }
+        public List<UnidadeCurricular> UnidadesCurriculares { get; set; }
         public Curso Curso { get; set; }
         public bool IsOnline { get; set; }
         public UserType TipoUtilizador { get; set; }

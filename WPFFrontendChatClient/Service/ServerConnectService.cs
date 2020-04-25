@@ -23,6 +23,10 @@ namespace WPFFrontendChatClient.Service
 
         public event AddMensagemRecebidaActionScs AddMensagemRecebidaEventScs;
 
+        public delegate void AddUnidadeCurricularAction(UnidadeCurricular unidadeCurricular);
+
+        public event AddUnidadeCurricularAction AddUnidadeCurricularEvent;
+
         public ServerConnectService()
         {
         }
@@ -47,6 +51,15 @@ namespace WPFFrontendChatClient.Service
                 Response resGetUserInfo = Helpers.ReceiveSerializedMessage(_tcpClient);
                 UtilizadorLigado = resGetUserInfo.Utilizador;
                 flagHaveUser = true;
+                /*
+                 *     Adiciona as Unidades Curriculares do Curso e Extras à lista de Aulas para podermos abrir
+                 * separadores de chat.
+                 *     Para isso invoca um evento que é capturado no "MainViewModel",
+                 */
+                UtilizadorLigado.Curso?.UnidadesCurriculares?.ForEach(unidadeCurricular =>
+                    AddUnidadeCurricularEvent?.Invoke(unidadeCurricular));
+                UtilizadorLigado.UnidadesCurriculares?.ForEach(unidadeCurricular =>
+                    AddUnidadeCurricularEvent?.Invoke(unidadeCurricular));
             }
 
             MessageHandler();
@@ -59,7 +72,7 @@ namespace WPFFrontendChatClient.Service
                 while (true)
                 {
                     Response response = Helpers.ReceiveSerializedMessage(_tcpClient);
-                    switch (response.Operacão)
+                    switch (response.Operacao)
                     {
                         case Response.Operation.EntrarChat:
                         {
@@ -87,7 +100,10 @@ namespace WPFFrontendChatClient.Service
                         }
                         case Response.Operation.NewUserOnline:
                         {
-                            Application.Current.Dispatcher?.Invoke(delegate { AddAlunoEvent?.Invoke(response.Utilizador); });
+                            Application.Current.Dispatcher?.Invoke(delegate
+                            {
+                                AddAlunoEvent?.Invoke(response.Utilizador);
+                            });
                             break;
                         }
                         case Response.Operation.BlockLogin:

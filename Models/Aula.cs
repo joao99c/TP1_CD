@@ -11,6 +11,13 @@ namespace Models
         public ICommand AbrirSeparadorChatCommand { get; set; }
 
         /// <summary>
+        /// Construtor utilizado pelo Deserialize
+        /// </summary>
+        public Aula()
+        {
+        }
+
+        /// <summary>
         /// Construtor de uma Aula
         /// </summary>
         /// <param name="unidadeCurricular">Unidade Curricular da Aula</param>

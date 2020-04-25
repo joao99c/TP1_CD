@@ -29,8 +29,9 @@ namespace Models
         /// <param name="tcpClient">Conexão TCP que vai receber os dados</param>
         /// <param name="dataSize">Tamanho dos dados (default = 1024)</param>
         /// <returns>"Response" com os dados dentro (objeto des-serializado)</returns>
-        public static Response ReceiveSerializedMessage(TcpClient tcpClient, int dataSize = 1024)
+        public static Response ReceiveSerializedMessage(TcpClient tcpClient, int dataSize = 2048)
         {
+            // TODO: Tentar calcular o tamanho correto
             byte[] data = new byte[dataSize];
             tcpClient.Client.Receive(data);
             return JsonConvert.DeserializeObject<Response>(Encoding.Unicode.GetString(data));

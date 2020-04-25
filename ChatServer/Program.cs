@@ -90,7 +90,7 @@ namespace ChatServer
                             // Recebe conexão
                             Response response = Helpers.ReceiveSerializedMessage(clienteConectado.TcpClient);
                             // Thread.Sleep(1000); //idk
-                            if (response.Operacão != Response.Operation.Login) return;
+                            if (response.Operacao != Response.Operation.Login) return;
 
                             Utilizador user = new Utilizador(response.Utilizador.Nome, response.Utilizador.Email,
                                 Utilizador.UserType.Aluno);
@@ -158,6 +158,16 @@ namespace ChatServer
 
                 connectedCliente.User.IsOnline = true;
 
+                // FAKE INFO
+                connectedCliente.User.Curso = new Curso("ESI", new List<UnidadeCurricular>
+                {
+                    new UnidadeCurricular(1, "CD"),
+                    new UnidadeCurricular(2, "AEDII")
+                });
+                connectedCliente.User.UnidadesCurriculares = new List<UnidadeCurricular>
+                    {new UnidadeCurricular(3, "LP2")};
+                // FIM FAKE INFO
+
                 /*
                  * É um utilizador novo:
                  *     1 - Envia a informação completa do Utilizador para ele próprio;
@@ -198,7 +208,7 @@ namespace ChatServer
                 {
                     // Get Response
                     Response response = Helpers.ReceiveSerializedMessage(connectedTcpClient);
-                    switch (response.Operacão)
+                    switch (response.Operacao)
                     {
                         case Response.Operation.EntrarChat:
                         {
@@ -241,38 +251,39 @@ namespace ChatServer
             /// Trata da Mensagem recebida de um Utilizador (mensagem que o servidor recebe)
             /// <para>Guarda a Mensagem no ficheiro e envia para o destinatário caso este esteja online</para>
             /// TODO: Testar Chat privado. Verificar se as mensagens são guardadas num ficheiro do servidor
-            /// TODO: Testar o mesmo para as aulas depois de os separadores das mesmas funcionarem no WPF
+            /// TODO: Testar o mesmo para as Aulas
             /// </summary>
             /// <param name="mensagem">Mensagem a ser tratada</param>
             /// <param name="utilizador">Utilizador que a enviou</param>
             private void SendMessage(Mensagem mensagem, Utilizador utilizador)
             {
                 // Filename:
-                // Aula: aula10
+                // Aula: uc10
                 // MP: 15310_15315 
                 // Lobby: idDestinatario = 0 
 
                 string filename = null;
                 Response resMsgToDestinatario = new Response(Response.Operation.SendMessage, utilizador, mensagem);
 
-                if (mensagem.IdDestinatario.Contains("aula"))
+                if (mensagem.IdDestinatario.Contains("uc"))
                 {
-                    // Nome do ficheiro = idDestinatario - ex.: aula1 onde 1 é o id da aula
+                    // Nome do ficheiro = idDestinatario = "uc1" - ex.: "uc1.txt" onde 1 é o Id da Unidade Curricular
                     filename += mensagem.IdDestinatario + ".txt";
-                    int idAula = int.Parse(mensagem.IdDestinatario.Remove(0, 4));
-                    // Todos os utilizadores na aula e online
+                    int idUc = int.Parse(mensagem.IdDestinatario.Remove(0, 2));
+                    // Todos os utilizadores na UC e online
                     ClientesConectados.FindAll(cliente =>
                         cliente.User.IsOnline &&
-                        cliente.User.Curso.UnidadesCurriculares.Find(uc => uc.Id == idAula) != null).ForEach(
-                        alunoEmAula =>
-                        {
-                            if (alunoEmAula.User.Email == utilizador.Email) return;
-                            Helpers.SendSerializedMessage(alunoEmAula.TcpClient, resMsgToDestinatario);
-                        });
+                        cliente.User.Curso.UnidadesCurriculares.Find(unidadeCurricular =>
+                            unidadeCurricular.Id == idUc) != null).ForEach(alunoEmAula =>
+                    {
+                        if (alunoEmAula.User.Email == utilizador.Email) return;
+                        Helpers.SendSerializedMessage(alunoEmAula.TcpClient, resMsgToDestinatario);
+                    });
                     Helpers.SaveMessageInFile(mensagem, filename);
                 }
                 else if (int.Parse(mensagem.IdDestinatario) == 0)
                 {
+                    // Console.WriteLine("Mensagem: "+mensagem.Conteudo);
                     // Mensagem para o Lobby
                     ClientesConectados.ForEach(cliente =>
                     {

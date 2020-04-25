@@ -6,12 +6,10 @@
         public string Nome { get; set; }
 
         /// <summary>
-        /// Construtor de uma Unidade Curricular
+        /// Construtor utilizado pelo Deserialize
         /// </summary>
-        /// <param name="nome">Nome da Unidade Curricular</param>
-        public UnidadeCurricular(string nome)
+        public UnidadeCurricular()
         {
-            Nome = nome;
         }
 
         /// <summary>
