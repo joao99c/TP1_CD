@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -34,12 +33,14 @@ namespace WPFFrontendChatClient.ViewModel
         private ObservableCollection<Mensagem> Mensagens { set; get; }
         public ICommand AddProfessorTeste { get; set; }
         public ICommand AddAulaTeste { get; set; }
-        public event AddMensagemAction AddMensagemEvent;
-        public event AddSeparadorAction AddSeparadorEvent;
-
-        public delegate void AddMensagemAction(Mensagem mensagem);
 
         public delegate void AddSeparadorAction(Utilizador utilizador);
+
+        public event AddSeparadorAction AddSeparadorEvent;
+
+        public delegate void AddMensagemRecebidaActionMvm(Mensagem mensagem);
+
+        public event AddMensagemRecebidaActionMvm AddMensagemRecebidaEventMvm;
 
         /// <summary>
         /// Initializes a new instance of the MainViewModel class.
@@ -63,7 +64,7 @@ namespace WPFFrontendChatClient.ViewModel
         {
             ServerConnectService = ServiceLocator.Current.GetInstance<ServerConnectService>();
             ServerConnectService.AddAlunoEvent += AddAlunoLista;
-            ServerConnectService.AddMensagemEvent += AddMensagemChat;
+            ServerConnectService.AddMensagemRecebidaEventScs += AddMensagemRecebidaChat;
 
             // ServerConnectService.IpAddress = "tp1cd.ddns.net";
             ServerConnectService.IpAddress = "192.168.1.4";
@@ -73,29 +74,25 @@ namespace WPFFrontendChatClient.ViewModel
             networkServiceThread.Start();
         }
 
-        private void AddMensagemChat(Mensagem mensagem)
+        /// <summary>
+        /// Procedimento "intermediário" de ligação entre o "ServerConnectService" e a "MainWindow"
+        /// <para>O "ServerConnectService" evoca um evento que chama este procedimento.</para>
+        /// <para>Este procedimento evoca outro evento que executa o procedimento de "DisplayMensagemRecebida" na "MainWindow"</para>
+        /// </summary>
+        /// <param name="mensagem"></param>
+        private void AddMensagemRecebidaChat(Mensagem mensagem)
         {
-            AddMensagemEvent?.Invoke(mensagem);
+            AddMensagemRecebidaEventMvm?.Invoke(mensagem);
         }
 
         /// <summary>
-        /// Função que adiciona Alunos à lista de alunos Online
+        /// Adiciona Alunos à lista de alunos Online
         /// </summary>
         /// <param name="alunoAdicionar">Aluno a adicionar à lista de alunos Online</param>
         private void AddAlunoLista(Utilizador alunoAdicionar)
         {
             alunoAdicionar.AbrirSeparadorChatCommand = new RelayCommand<Utilizador>(CriarSeparadorChatPrivado);
             Alunos.Add(alunoAdicionar);
-        }
-
-        // TODO: Usar na utilização real??
-        // TODO: Trocar node da função, apagar ICommand e RelayCommand
-        // TODO: Chamar esta função no ServerConnectService quando receber mensagens
-        private void AddMensagemRecebidaAction()
-        {
-            Mensagens.Add(new Mensagem("10", "Aluno 10", "aluno10@alunos.ipca.pt", "2", "Helder Carvalho",
-                "MSG Teste"));
-            AddMensagemEvent?.Invoke(Mensagens.Last());
         }
 
         /// <summary>
@@ -109,12 +106,15 @@ namespace WPFFrontendChatClient.ViewModel
 
         /// <summary>
         /// Cria um separador de chat da Aula/UC escolhida
+        /// TODO: Colocar a funcionar.
         /// </summary>
         /// <param name="aula">Aula para criar separador</param>
         private void CriarSeparadorChatAula(Aula aula)
         {
             MessageBox.Show("Aula: " + aula.UnidadeCurricular.Nome, "Criar Separador Chat Aula");
         }
+
+        // TEST STUFF
 
         private int _numAux;
 

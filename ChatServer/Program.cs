@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,7 +13,7 @@ namespace ChatServer
     {
         public static void Main(string[] args)
         {
-            var server = new Server();
+            Server server = new Server();
             server.Start();
             while (true)
             {
@@ -28,7 +26,7 @@ namespace ChatServer
                 Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName;
 
             private TcpListener TcpListener { get; set; }
-            public List<Cliente> ClientesConectados { get; set; }
+            private List<Cliente> ClientesConectados { get; set; }
 
             public Server()
             {
@@ -64,7 +62,7 @@ namespace ChatServer
                         TcpClient client = TcpListener.AcceptTcpClient();
                         Console.WriteLine("Connected!");
                         ClientesConectados.Add(new Cliente(client));
-                        Console.WriteLine(GetState(client));
+                        // Console.WriteLine(GetState(client));
 
                         Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
                         Thread connectionThread = new Thread(ListenForClientConnections);
@@ -89,15 +87,15 @@ namespace ChatServer
                     {
                         try
                         {
-                            // Login user and Start communications
+                            // Recebe conexão
                             Response response = Helpers.ReceiveSerializedMessage(clienteConectado.TcpClient);
-                            Thread.Sleep(1000); //idk
-                            if (response.Op != Response.Operation.Login) return;
+                            // Thread.Sleep(1000); //idk
+                            if (response.Operacão != Response.Operation.Login) return;
 
-                            Utilizador user = new Utilizador(response.User.Nome, response.User.Email,
+                            Utilizador user = new Utilizador(response.Utilizador.Nome, response.Utilizador.Email,
                                 Utilizador.UserType.Aluno);
-                            // Check if user or email using the email
-                            if (!response.User.Email.Contains("alunos"))
+                            // Verifica se não é um email de aluno
+                            if (!response.Utilizador.Email.Contains("alunos"))
                             {
                                 user.TipoUtilizador = Utilizador.UserType.Prof;
                             }
@@ -121,9 +119,13 @@ namespace ChatServer
             }
 
             /// <summary>
-            /// Adiciona o Utilizador à lista de Utilizadores conectados, caso não esteja ligado
+            /// Adiciona o Utilizador à lista de Utilizadores conectados, caso já não esteja nessa lista.
+            /// <para>Se não existir um Utilizador já registado, vai registar esse Utilizador.</para>
+            /// Se o Utilizador já estiver registado, será apenas adicionado à lista.
+            /// <para>No fim, o novo Utilizador ligado é enviado para os que já estão online e, os que já estão online
+            /// são enviados para o novo Utilizador ligado</para>
             /// </summary>
-            /// <param name="connectedCliente"></param>
+            /// <param name="connectedCliente">Cliente a colocar como Online.</param>
             /// <param name="utilizadorConectar">Utilizador a adicionar</param>
             private Cliente addNewUserOnline(Cliente connectedCliente, Utilizador utilizadorConectar)
             {
@@ -139,7 +141,7 @@ namespace ChatServer
                     return connectedCliente;
                 }
 
-                utilizadorEncontrado = Helpers.GetUserRegisted(utilizadorConectar);
+                utilizadorEncontrado = Helpers.GetRegisteredUser(utilizadorConectar);
                 // Se for um utilizador já registado
                 if (utilizadorEncontrado != null)
                 {
@@ -148,7 +150,7 @@ namespace ChatServer
                 }
 
                 // Regista e guarda o Utilizador
-                // TODO: Get User information (Curso, horario etc)
+                // TODO: Get User information (Curso, horário etc)
                 if (utilizadorEncontrado == null)
                 {
                     connectedCliente.User = Helpers.SaveUserInFile(utilizadorConectar);
@@ -192,65 +194,64 @@ namespace ChatServer
             /// <param name="connectedTcpClient">Cliente a escutar</param>
             private void MessageHandler(TcpClient connectedTcpClient)
             {
-                // Get Response
-                Response response = Helpers.ReceiveSerializedMessage(connectedTcpClient);
-                switch (response.Op)
+                while (true)
                 {
-                    case Response.Operation.EntrarChat:
+                    // Get Response
+                    Response response = Helpers.ReceiveSerializedMessage(connectedTcpClient);
+                    switch (response.Operacão)
                     {
-                        Console.WriteLine("EntrarChat");
-                        break;
+                        case Response.Operation.EntrarChat:
+                        {
+                            break;
+                        }
+                        case Response.Operation.SendMessage:
+                        {
+                            SendMessage(response.Mensagem, response.Utilizador);
+                            break;
+                        }
+                        case Response.Operation.LeaveChat:
+                        {
+                            break;
+                        }
+                        case Response.Operation.Login:
+                        {
+                            break;
+                        }
+                        case Response.Operation.GetUserInfo:
+                        {
+                            break;
+                        }
+                        case Response.Operation.NewUserOnline:
+                        {
+                            break;
+                        }
+                        case Response.Operation.BlockLogin:
+                        {
+                            break;
+                        }
+                        default:
+                        {
+                            throw new ArgumentOutOfRangeException();
+                        }
                     }
-
-                    case Response.Operation.SendMessage:
-                    {
-                        SendMessage(response.Msg, response.User);
-                        break;
-                    }
-                    case Response.Operation.LeaveChat:
-                    {
-                        break;
-                    }
-                    case Response.Operation.Login:
-                    {
-                        break;
-                    }
-                    case Response.Operation.GetUserInfo:
-                    {
-                        break;
-                    }
-                    case Response.Operation.NewUserOnline:
-                    {
-                        break;
-                    }
-                    case Response.Operation.BlockLogin:
-                        break;
-
-                    default:
-                        throw new ArgumentOutOfRangeException();
                 }
             }
 
-
-            
             /// <summary>
             /// Trata da Mensagem recebida de um Utilizador (mensagem que o servidor recebe)
             /// <para>Guarda a Mensagem no ficheiro e envia para o destinatário caso este esteja online</para>
-            /// TODO: NÃO FUNCIONA!
-            /// TODO: É necessário colocar o Id do Utilizador a funcionar antes de modificar esta função
-            /// TODO:  - Para isso é necessário guardar os Utilizadores e atribuir-lhes Id's quando entram pela primeira vez
-            /// TODO: No fim disto tudo é necessário juntar os Id's e criar o ficheiro, guardar a Mensagem nesse ficheiro e
-            /// TODO: enviar ao destinatário caso esteja online
+            /// TODO: Testar Chat privado. Verificar se as mensagens são guardadas num ficheiro do servidor
+            /// TODO: Testar o mesmo para as aulas depois de os separadores das mesmas funcionarem no WPF
             /// </summary>
-            /// <param name="mensagem"></param>
-            /// <param name="utilizador"></param>
+            /// <param name="mensagem">Mensagem a ser tratada</param>
+            /// <param name="utilizador">Utilizador que a enviou</param>
             private void SendMessage(Mensagem mensagem, Utilizador utilizador)
             {
                 // Filename:
-                    // Aula: aula10
-                    // MP: 15310_15315 
-                    // Lobby: idDestinatario = 0 
-                
+                // Aula: aula10
+                // MP: 15310_15315 
+                // Lobby: idDestinatario = 0 
+
                 string filename = null;
                 Response resMsgToDestinatario = new Response(Response.Operation.SendMessage, utilizador, mensagem);
 
@@ -262,26 +263,25 @@ namespace ChatServer
                     // Todos os utilizadores na aula e online
                     ClientesConectados.FindAll(cliente =>
                         cliente.User.IsOnline &&
-                        (cliente.User.Curso.UnidadesCurriculares.Find(uc => uc.Id == idAula) != null)
-                    ).ForEach(alunoEmAula =>
-                    {
-                        if (alunoEmAula.User.Email == utilizador.Email) return;
-                        Helpers.SendSerializedMessage(alunoEmAula.TcpClient, resMsgToDestinatario);
-                    });
+                        cliente.User.Curso.UnidadesCurriculares.Find(uc => uc.Id == idAula) != null).ForEach(
+                        alunoEmAula =>
+                        {
+                            if (alunoEmAula.User.Email == utilizador.Email) return;
+                            Helpers.SendSerializedMessage(alunoEmAula.TcpClient, resMsgToDestinatario);
+                        });
                     Helpers.SaveMessageInFile(mensagem, filename);
                 }
-                else if (int.Parse(mensagem.IdDestinatario) == 0) // LOBBY
+                else if (int.Parse(mensagem.IdDestinatario) == 0)
                 {
+                    // Mensagem para o Lobby
                     ClientesConectados.ForEach(cliente =>
                     {
-                        if (cliente.User.IsOnline)
-                        {
-                            // Não envia para ele proprio
-                            if (cliente.User.Email == utilizador.Email) return;
-                            Helpers.SendSerializedMessage(cliente.TcpClient, resMsgToDestinatario);
-                        }
+                        if (!cliente.User.IsOnline) return;
+                        // Não envia para ele próprio
+                        if (cliente.User.Email == utilizador.Email) return;
+                        Helpers.SendSerializedMessage(cliente.TcpClient, resMsgToDestinatario);
                     });
-                    // NAO GUARDA EM FICHEIRO
+                    // Não guarda em ficheiro
                 }
                 else
                 {
@@ -296,23 +296,17 @@ namespace ChatServer
 
                     Cliente destinatario = ClientesConectados.Find(cliente =>
                         cliente.User.IsOnline && cliente.User.Id == int.Parse(mensagem.IdDestinatario));
-
                     Helpers.SendSerializedMessage(destinatario.TcpClient, resMsgToDestinatario);
                     Helpers.SaveMessageInFile(mensagem, filename);
                 }
             }
         }
 
-        public static TcpState GetState(TcpClient tcpClient)
+        /*private static TcpState GetState(TcpClient tcpClient)
         {
-            var foo = IPGlobalProperties.GetIPGlobalProperties()
-                .GetActiveTcpConnections()
+            TcpConnectionInformation foo = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections()
                 .SingleOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint));
-            return foo != null ? foo.State : TcpState.Unknown;
-        }
+            return foo?.State ?? TcpState.Unknown;
+        }*/
     }
 }
-
-//TODO: Utilizadores em ficheiros
-//TODO: Enviar mensagem para o WPF
-//TODO: Usar o ID do utilizador nas tabs etc

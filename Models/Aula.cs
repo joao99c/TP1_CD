@@ -9,7 +9,7 @@ namespace Models
         public DateTime HoraInicial { get; set; }
         public DateTime HoraFinal { get; set; }
         public ICommand AbrirSeparadorChatCommand { get; set; }
-        
+
         /// <summary>
         /// Construtor de uma Aula
         /// </summary>

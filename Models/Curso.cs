@@ -6,7 +6,7 @@ namespace Models
     {
         public string Nome { get; set; }
         public List<UnidadeCurricular> UnidadesCurriculares { get; set; }
-        
+
         /// <summary>
         /// Construtor de um Curso
         /// </summary>

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Net.Sockets;
-using System.Text;
 
 namespace Models
 {
@@ -15,21 +13,25 @@ namespace Models
             LeaveChat,
             SendMessage,
             GetUserInfo,
-
             NewUserOnline
-            // ....
         }
 
-        public Operation Op { get; set; }
-        public Mensagem Msg { get; set; }
-        public Utilizador User { get; set; }
+        public Operation Operacão { get; set; }
+        public Mensagem Mensagem { get; set; }
+        public Utilizador Utilizador { get; set; }
 
-        public Response(Operation op, Utilizador user, Mensagem msg = null)
+        /// <summary>
+        /// Construtor de uma Response
+        /// </summary>
+        /// <param name="operacão">Operação</param>
+        /// <param name="utilizador">Utilizador que a cria</param>
+        /// <param name="mensagem">Mensagem da Response</param>
+        public Response(Operation operacão, Utilizador utilizador, Mensagem mensagem = null)
         {
-            Op = op;
-            Msg = msg;
-            User = user;
-            switch (op)
+            Operacão = operacão;
+            Mensagem = mensagem;
+            Utilizador = utilizador;
+            switch (operacão)
             {
                 case Operation.EntrarChat:
                 {
@@ -41,20 +43,36 @@ namespace Models
                 }
                 case Operation.SendMessage:
                 {
-                    Msg = msg;
+                    Mensagem = mensagem;
                     break;
                 }
                 case Operation.GetUserInfo:
                 {
-                    Msg = msg;
+                    Mensagem = mensagem;
                     break;
+                }
+                case Operation.Login:
+                {
+                    break;
+                }
+                case Operation.BlockLogin:
+                {
+                    break;
+                }
+                case Operation.NewUserOnline:
+                {
+                    break;
+                }
+                default:
+                {
+                    throw new ArgumentOutOfRangeException();
                 }
             }
         }
 
-        public static void SendStringMessage(NetworkStream ns, string msg)
+        /*public static void SendStringMessage(NetworkStream ns, string msg)
         {
-            ns.Write(Encoding.UTF8.GetBytes(msg), 0, Encoding.Unicode.GetBytes(msg).Length);
-        }
+            ns.Write(Encoding.Unicode.GetBytes(msg), 0, Encoding.Unicode.GetBytes(msg).Length);
+        }*/
     }
 }

@@ -1,10 +1,9 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Windows;
 using Models;
-using WPFFrontendChatClient.ViewModel;
 
 namespace WPFFrontendChatClient.Service
 {
@@ -16,14 +15,13 @@ namespace WPFFrontendChatClient.Service
         public int Port { get; set; }
         public Utilizador UtilizadorLigado { get; set; }
 
-        public event AddAlunoAction AddAlunoEvent;
-
         public delegate void AddAlunoAction(Utilizador utilizador);
 
-        public event AddMensagemAction AddMensagemEvent;
+        public event AddAlunoAction AddAlunoEvent;
 
-        public delegate void AddMensagemAction(Mensagem mensagem);
+        public delegate void AddMensagemRecebidaActionScs(Mensagem mensagem);
 
+        public event AddMensagemRecebidaActionScs AddMensagemRecebidaEventScs;
 
         public ServerConnectService()
         {
@@ -42,13 +40,13 @@ namespace WPFFrontendChatClient.Service
             _tcpClient.Connect(_ipEndPoint);
             Response resLogin = new Response(Response.Operation.Login, utilizador);
             Helpers.SendSerializedMessage(_tcpClient, resLogin);
-            // Espera pela mensagem do servidor com os dados do user. (Curso, horario etc)
-            Boolean flagHaveUser = true;
-            while (flagHaveUser)
+            // Espera pela mensagem do servidor com os dados do user.
+            Boolean flagHaveUser = false;
+            while (!flagHaveUser)
             {
                 Response resGetUserInfo = Helpers.ReceiveSerializedMessage(_tcpClient);
-                UtilizadorLigado = resGetUserInfo.User;
-                flagHaveUser = false;
+                UtilizadorLigado = resGetUserInfo.Utilizador;
+                flagHaveUser = true;
             }
 
             MessageHandler();
@@ -60,21 +58,18 @@ namespace WPFFrontendChatClient.Service
             {
                 while (true)
                 {
-                    // Get Response
                     Response response = Helpers.ReceiveSerializedMessage(_tcpClient);
-                    switch (response.Op)
+                    switch (response.Operacão)
                     {
                         case Response.Operation.EntrarChat:
                         {
-                            Console.WriteLine("EntrarChat");
                             break;
                         }
-
                         case Response.Operation.SendMessage:
                         {
                             Application.Current.Dispatcher?.Invoke(delegate
                             {
-                                AddMensagemEvent?.Invoke(response.Msg);
+                                AddMensagemRecebidaEventScs?.Invoke(response.Mensagem);
                             });
                             break;
                         }
@@ -92,22 +87,22 @@ namespace WPFFrontendChatClient.Service
                         }
                         case Response.Operation.NewUserOnline:
                         {
-                            Application.Current.Dispatcher?.Invoke(delegate { AddAlunoEvent?.Invoke(response.User); });
+                            Application.Current.Dispatcher?.Invoke(delegate { AddAlunoEvent?.Invoke(response.Utilizador); });
                             break;
                         }
                         case Response.Operation.BlockLogin:
+                        {
                             break;
-
+                        }
                         default:
+                        {
                             throw new ArgumentOutOfRangeException();
+                        }
                     }
                 }
             });
             messageHandlerThread.Start();
         }
-        
-
-
 
         /// <summary>
         /// Envia a Mensagem para o servidor

@@ -22,12 +22,8 @@ namespace WPFFrontendChatClient.View
     /// </summary>
     public partial class MainWindow
     {
-        // Set the API Endpoint to Graph 'me' endpoint. 
-        // To change from Microsoft public cloud to a national cloud, use another value of graphAPIEndpoint.
-        // Reference with Graph endpoints here: https://docs.microsoft.com/graph/deployments#microsoft-graph-and-graph-explorer-service-root-endpoints
+        // API Endpoint to MS Graph
         private const string GraphApiEndpoint = "https://graph.microsoft.com/v1.0/me";
-
-        //Set the scope for API call to user.read
         private readonly string[] _scopes = {"user.read"};
 
         private MainViewModel MainViewModel { get; set; }
@@ -40,7 +36,7 @@ namespace WPFFrontendChatClient.View
 
             DataContext = new MainViewModel();
             MainViewModel = (MainViewModel) DataContext;
-            MainViewModel.AddMensagemEvent += DisplayMensagem;
+            MainViewModel.AddMensagemRecebidaEventMvm += DisplayMensagemRecebida;
             MainViewModel.AddSeparadorEvent += AddSeparadorChat;
             TabItems = new List<TabItem>();
             AddSeparadorChat(new Utilizador("Lobby", "lobby@program"));
@@ -164,7 +160,7 @@ namespace WPFFrontendChatClient.View
                 MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
                 MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name.Remove(0, 2),
                 nomeDestinatarioTemp, TextBoxMensagem.Text);
-            DisplayMensagem(mensagem);
+            DisplayMensagemRecebida(mensagem);
             MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
             TextBoxMensagem.Text = "";
         }
@@ -173,7 +169,7 @@ namespace WPFFrontendChatClient.View
         /// Recebe uma Mensagem e cria os TextBlock's para colocar no chat
         /// </summary>
         /// <param name="mensagem">Mensagem a mostrar</param>
-        private void DisplayMensagem(Mensagem mensagem)
+        private void DisplayMensagemRecebida(Mensagem mensagem)
         {
             TabItem mensagemTabItem =
                 mensagem.IdDestinatario == MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString()
