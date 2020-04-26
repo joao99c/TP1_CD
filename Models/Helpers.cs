@@ -15,26 +15,33 @@ namespace Models
 
         /// <summary>
         /// Envia mensagem serializada em Json
+        /// <para>1º - envia o tamanho da mensagem;</para>
+        /// 2º - envia a mensagem.
         /// </summary>
         /// <param name="tcpClient">Conexão TCP para onde enviar</param>
         /// <param name="obj">Dados a enviar</param>
         public static void SendSerializedMessage(TcpClient tcpClient, object obj)
         {
-            tcpClient.Client.Send(Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(obj)));
+            byte[] enviar = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(obj));
+            tcpClient.Client.Send(BitConverter.GetBytes(enviar.Length));
+            tcpClient.Client.Send(enviar);
         }
 
         /// <summary>
         /// Recebe Mensagem serializada em Json
+        /// <para>1º - recebe o tamanho da mensagem que vai receber;</para>
+        ///     2º - cria um array de bytes com o tamanho recebido;
+        /// <para>3º - recebe a mensagem</para>
         /// </summary>
         /// <param name="tcpClient">Conexão TCP que vai receber os dados</param>
-        /// <param name="dataSize">Tamanho dos dados (default = 1024)</param>
         /// <returns>"Response" com os dados dentro (objeto des-serializado)</returns>
-        public static Response ReceiveSerializedMessage(TcpClient tcpClient, int dataSize = 2048)
+        public static Response ReceiveSerializedMessage(TcpClient tcpClient)
         {
-            // TODO: Tentar calcular o tamanho correto
-            byte[] data = new byte[dataSize];
-            tcpClient.Client.Receive(data);
-            return JsonConvert.DeserializeObject<Response>(Encoding.Unicode.GetString(data));
+            byte[] tamanho = new byte[4];
+            tcpClient.Client.Receive(tamanho);
+            byte[] mensagem = new byte[BitConverter.ToInt32(tamanho, 0)];
+            tcpClient.Client.Receive(mensagem);
+            return JsonConvert.DeserializeObject<Response>(Encoding.Unicode.GetString(mensagem));
         }
 
         /// <summary>
