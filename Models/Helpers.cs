@@ -79,6 +79,7 @@ namespace Models
         {
             // Atribuir Id (+1 do que o último atribuído)
             utilizador.Id = File.ReadLines(UsersFilePath).Count() + 1;
+            // Cria/Abre ficheiro para escrever
             using (StreamWriter sw = !File.Exists(UsersFilePath)
                 ? File.CreateText(UsersFilePath)
                 : File.AppendText(UsersFilePath))
@@ -124,19 +125,12 @@ namespace Models
         public static void SaveMessageInFile(Mensagem mensagem, string filename)
         {
             string projectDirectory = $"{Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName}\\Chats\\";
-
-            // Create a file to write to.
+            // Cria/Abre ficheiro para escrever
             using (StreamWriter sw = !File.Exists(projectDirectory + filename)
                 ? File.CreateText(projectDirectory + filename)
                 : File.AppendText(projectDirectory + filename))
             {
-                // De: 
-                sw.Write($"E:{mensagem.IdRemetente}");
-                // Para:
-                sw.Write($" R:{mensagem.IdDestinatario}");
-                // Mensagem
-                sw.Write($" \"{mensagem.Conteudo.Trim()}\" \"{mensagem.DataHoraEnvio}\"\n");
-                // Horas
+                sw.WriteLine(JsonConvert.SerializeObject(mensagem));
             }
         }
     }

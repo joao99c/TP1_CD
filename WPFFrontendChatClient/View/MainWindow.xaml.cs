@@ -36,7 +36,7 @@ namespace WPFFrontendChatClient.View
 
             DataContext = new MainViewModel();
             MainViewModel = (MainViewModel) DataContext;
-            MainViewModel.AddMensagemRecebidaEventMvm += DisplayMensagemRecebida;
+            MainViewModel.AddMensagemRecebidaEventMvm += DisplayMensagem;
             MainViewModel.AddSeparadorEvent += AddSeparadorChat;
             TabItems = new List<TabItem>();
             AddSeparadorChat("Lobby", "lobby", "id0");
@@ -154,13 +154,29 @@ namespace WPFFrontendChatClient.View
         private void EnviarMensagem_OnClick(object sender, RoutedEventArgs e)
         {
             TabItem destinatarioTabItem = (TabItem) ChatTabControl.SelectedItem;
-            string nomeDestinatarioTemp = destinatarioTabItem.Header.ToString().Substring(0,
-                destinatarioTabItem.Header.ToString().IndexOf(" (", StringComparison.Ordinal));
-            Mensagem mensagem = new Mensagem(MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString(),
-                MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
-                MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name.Remove(0, 2),
-                nomeDestinatarioTemp, TextBoxMensagem.Text);
-            DisplayMensagemRecebida(mensagem);
+            string nomeDestinatarioTemp;
+            Mensagem mensagem;
+            if (destinatarioTabItem.Header.ToString().Contains(" ("))
+            {
+                // Se for uma mensagem privada
+                nomeDestinatarioTemp = destinatarioTabItem.Header.ToString().Substring(0,
+                    destinatarioTabItem.Header.ToString().IndexOf(" (", StringComparison.Ordinal));
+                mensagem = new Mensagem(MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString(),
+                    MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
+                    MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name.Remove(0, 2),
+                    nomeDestinatarioTemp, TextBoxMensagem.Text);
+            }
+            else
+            {
+                // Se for uma mensagem para uma Aula
+                nomeDestinatarioTemp = destinatarioTabItem.Header.ToString();
+                mensagem = new Mensagem(MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString(),
+                    MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
+                    MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name,
+                    nomeDestinatarioTemp, TextBoxMensagem.Text);
+            }
+
+            DisplayMensagem(mensagem);
             MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
             TextBoxMensagem.Text = "";
         }
@@ -169,12 +185,23 @@ namespace WPFFrontendChatClient.View
         /// Recebe uma Mensagem e cria os TextBlock's para colocar no chat
         /// </summary>
         /// <param name="mensagem">Mensagem a mostrar</param>
-        private void DisplayMensagemRecebida(Mensagem mensagem)
+        private void DisplayMensagem(Mensagem mensagem)
         {
-            TabItem mensagemTabItem =
-                mensagem.IdDestinatario == MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString()
-                    ? TabItems.Find(tabItem => tabItem.Name == "id" + mensagem.IdRemetente)
-                    : TabItems.Find(tabItem => tabItem.Name == "id" + mensagem.IdDestinatario);
+            TabItem mensagemTabItem;
+            if (mensagem.IdDestinatario.Contains("uc"))
+            {
+                // Se for uma mensagem para uma Aula
+                mensagemTabItem = TabItems.Find(tabItem => tabItem.Name == mensagem.IdDestinatario);
+            }
+            else
+            {
+                // Se for uma mensagem privada
+                mensagemTabItem =
+                    mensagem.IdDestinatario == MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString()
+                        ? TabItems.Find(tabItem => tabItem.Name == "id" + mensagem.IdRemetente)
+                        : TabItems.Find(tabItem => tabItem.Name == "id" + mensagem.IdDestinatario);
+            }
+
             if (mensagemTabItem == null)
             {
                 AddSeparadorChat(mensagem.NomeRemetente,
@@ -258,15 +285,14 @@ namespace WPFFrontendChatClient.View
             if (existeTabIgual) return;
             ChatTabControl.DataContext = null;
             int count = TabItems.Count;
-            string nameId = idName;
             TabItem novaTabItem = new TabItem
             {
-                Header = tabHeader, Name = nameId,
+                Header = tabHeader, Name = idName,
                 HeaderTemplate = ChatTabControl.FindResource("TabHeader") as DataTemplate
             };
-            ScrollViewer chatScrollViewer = new ScrollViewer {Name = $"{nameId}ScrollViewer"};
+            ScrollViewer chatScrollViewer = new ScrollViewer {Name = $"{idName}ScrollViewer"};
             ItemsControl chatItemsControl = new ItemsControl();
-            StackPanel chatStackPanel = new StackPanel {Name = $"{nameId}StackPanel"};
+            StackPanel chatStackPanel = new StackPanel {Name = $"{idName}StackPanel"};
             chatItemsControl.Items.Add(chatStackPanel);
             chatScrollViewer.Content = chatItemsControl;
             novaTabItem.Content = chatScrollViewer;
