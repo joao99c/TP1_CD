@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -37,8 +37,8 @@ namespace WPFFrontendChatClient.Service
         /// <param name="utilizador">Utilizador que vai iniciar conexão</param>
         public void Start(Utilizador utilizador)
         {
-            _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
-            // _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+            // _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
 
             _tcpClient = new TcpClient();
             _tcpClient.Connect(_ipEndPoint);

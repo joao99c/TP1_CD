@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using Models;
 
 namespace ChatServer
@@ -61,11 +61,10 @@ namespace ChatServer
                         Console.WriteLine("Waiting for connections...");
                         TcpClient client = TcpListener.AcceptTcpClient();
                         Console.WriteLine("Connected!");
-                        ClientesConectados.Add(new Cliente(client));
                         // Console.WriteLine(GetState(client));
 
                         Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
-                        Thread connectionThread = new Thread(ListenForClientConnections);
+                        Thread connectionThread = new Thread(() => ListenForClientConnections(client));
                         connectionThread.Start();
                     }
                     catch (Exception ex)
@@ -79,42 +78,27 @@ namespace ChatServer
             /// <summary>
             /// Aceita conexão, verifica que tipo de utilizador é e inicia a Thread de interceção de Mensagens
             /// </summary>
-            private void ListenForClientConnections()
+            private void ListenForClientConnections(TcpClient connectedTcpClient)
             {
+                ClientesConectados.Add(new Cliente(connectedTcpClient));
+                var connectedClient = ClientesConectados.Last();
                 while (true)
                 {
-                    Parallel.ForEach(ClientesConectados, clienteConectado =>
+                    try
                     {
-                        try
-                        {
-                            // Recebe conexão
-                            Response response = Helpers.ReceiveSerializedMessage(clienteConectado.TcpClient);
-                            // Thread.Sleep(1000); //idk
-                            if (response.Operacao != Response.Operation.Login) return;
+                        MessageHandler(connectedClient);
+                        // Thread.Sleep(1000);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                        Console.WriteLine("Um utilizador foi desconectado!");
+                        ClientesConectados.Remove(connectedClient);
+                        Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
+                        return;
+                    }
 
-                            Utilizador user = new Utilizador(response.Utilizador.Nome, response.Utilizador.Email,
-                                Utilizador.UserType.Aluno);
-                            // Verifica se não é um email de aluno
-                            if (!response.Utilizador.Email.Contains("alunos"))
-                            {
-                                user.TipoUtilizador = Utilizador.UserType.Prof;
-                            }
-
-                            clienteConectado.User = user;
-                            // Antes do Login no Programa
-                            clienteConectado.User.IsOnline = false;
-                            // New user online
-                            clienteConectado = addNewUserOnline(clienteConectado, user);
-                            MessageHandler(clienteConectado.TcpClient);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine("Um utilizador foi desconectado!");
-                            ClientesConectados.Remove(clienteConectado);
-                            Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
-                        }
-                    });
-                    Thread.Sleep(1000);
+                    // Thread.Sleep(1000);
                 }
             }
 
@@ -201,48 +185,60 @@ namespace ChatServer
             /// Tratador de conexão
             /// <para>Recebe mensagens e trata-as de acordo com o seu tipo</para>
             /// </summary>
-            /// <param name="connectedTcpClient">Cliente a escutar</param>
-            private void MessageHandler(TcpClient connectedTcpClient)
+            /// <param name="connectedClient">Cliente a escutar</param>
+            private void MessageHandler(Cliente connectedClient)
             {
-                while (true)
+                // Get Response
+                Response response = Helpers.ReceiveSerializedMessage(connectedClient.TcpClient);
+                switch (response.Operacao)
                 {
-                    // Get Response
-                    Response response = Helpers.ReceiveSerializedMessage(connectedTcpClient);
-                    switch (response.Operacao)
+                    case Response.Operation.EntrarChat:
                     {
-                        case Response.Operation.EntrarChat:
+                        break;
+                    }
+                    case Response.Operation.SendMessage:
+                    {
+                        SendMessage(response.Mensagem, response.Utilizador);
+                        // Console.WriteLine(response.Mensagem.Conteudo);
+                        break;
+                    }
+                    case Response.Operation.LeaveChat:
+                    {
+                        break;
+                    }
+                    case Response.Operation.Login:
+                    {
+                        Utilizador user = new Utilizador(response.Utilizador.Nome, response.Utilizador.Email,
+                            Utilizador.UserType.Aluno);
+                        // Verifica se não é um email de aluno
+                        if (!response.Utilizador.Email.Contains("alunos"))
                         {
-                            break;
+                            user.TipoUtilizador = Utilizador.UserType.Prof;
                         }
-                        case Response.Operation.SendMessage:
-                        {
-                            SendMessage(response.Mensagem, response.Utilizador);
-                            break;
-                        }
-                        case Response.Operation.LeaveChat:
-                        {
-                            break;
-                        }
-                        case Response.Operation.Login:
-                        {
-                            break;
-                        }
-                        case Response.Operation.GetUserInfo:
-                        {
-                            break;
-                        }
-                        case Response.Operation.NewUserOnline:
-                        {
-                            break;
-                        }
-                        case Response.Operation.BlockLogin:
-                        {
-                            break;
-                        }
-                        default:
-                        {
-                            throw new ArgumentOutOfRangeException();
-                        }
+
+                        connectedClient.User = user;
+                        // Antes do Login no Programa
+                        connectedClient.User.IsOnline = false;
+                        // New user online
+                        connectedClient = addNewUserOnline(connectedClient, user);
+                        Console.WriteLine($"Login efectuado: {connectedClient.User.Nome}");
+                        break;
+                    }
+                    case Response.Operation.GetUserInfo:
+                    {
+                        break;
+                    }
+                    case Response.Operation.NewUserOnline:
+                    {
+                        break;
+                    }
+                    case Response.Operation.BlockLogin:
+                    {
+                        break;
+                    }
+                    default:
+                    {
+                        throw new ArgumentOutOfRangeException();
                     }
                 }
             }

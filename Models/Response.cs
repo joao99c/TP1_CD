@@ -20,6 +20,10 @@ namespace Models
         public Mensagem Mensagem { get; set; }
         public Utilizador Utilizador { get; set; }
 
+        public Response()
+        {
+        }
+        
         /// <summary>
         /// Construtor de uma Response
         /// </summary>
@@ -31,7 +35,7 @@ namespace Models
             Operacao = operacao;
             Mensagem = mensagem;
             Utilizador = utilizador;
-            switch (operacao)
+            /*switch (operacao)
             {
                 case Operation.EntrarChat:
                 {
@@ -67,7 +71,7 @@ namespace Models
                 {
                     throw new ArgumentOutOfRangeException();
                 }
-            }
+            }*/
         }
 
         /*public static void SendStringMessage(NetworkStream ns, string msg)

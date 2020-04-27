@@ -11,6 +11,7 @@ using System.Windows.Documents;
 using System.Windows.Interop;
 using CommonServiceLocator;
 using Microsoft.Identity.Client;
+using Microsoft.Win32;
 using Models;
 using Newtonsoft.Json.Linq;
 using WPFFrontendChatClient.ViewModel;
@@ -179,6 +180,15 @@ namespace WPFFrontendChatClient.View
             DisplayMensagem(mensagem);
             MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
             TextBoxMensagem.Text = "";
+            TextBoxMensagem.Focus();
+        }
+
+        private void EnviarFicheiro_OnClick(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            bool? resultado = fileDialog.ShowDialog();
+            if (resultado == false) return;
+            string caminhoFicheiro = fileDialog.FileName;
         }
 
         /// <summary>

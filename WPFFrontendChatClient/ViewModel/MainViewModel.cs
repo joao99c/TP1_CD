@@ -64,8 +64,8 @@ namespace WPFFrontendChatClient.ViewModel
             ServerConnectService.AddMensagemRecebidaEventScs += AddMensagemRecebidaChat;
             ServerConnectService.AddUnidadeCurricularEvent += AddUnidadeCurricularLista;
 
-            // ServerConnectService.IpAddress = "tp1cd.ddns.net";
-            ServerConnectService.IpAddress = "192.168.1.4";
+            ServerConnectService.IpAddress = "tp1cd.ddns.net";
+            // ServerConnectService.IpAddress = "192.168.1.65";
 
             ServerConnectService.Port = int.Parse("1000");
             ServerConnectService.Start(utilizador);
