@@ -33,6 +33,9 @@ namespace ChatServer
                 TcpListener = new TcpListener(IPAddress.Parse("192.168.1.4"), 1000);
             }
 
+            /// <summary>
+            /// Inicia o servidor
+            /// </summary>
             public void Start()
             {
                 // Init
@@ -48,10 +51,13 @@ namespace ChatServer
 
                 // Start Listener
                 TcpListener.Start();
-                var acceptTcpClientThread = new Thread(AcceptTcpClient);
+                Thread acceptTcpClientThread = new Thread(AcceptTcpClient);
                 acceptTcpClientThread.Start();
             }
 
+            /// <summary>
+            /// Aceita conexões e inicia a escuta de mensagens
+            /// </summary>
             private void AcceptTcpClient()
             {
                 while (true)
@@ -64,7 +70,7 @@ namespace ChatServer
                         // Console.WriteLine(GetState(client));
 
                         Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
-                        Thread connectionThread = new Thread(() => ListenForClientConnections(client));
+                        Thread connectionThread = new Thread(() => ListenForClientMessages(client));
                         connectionThread.Start();
                     }
                     catch (Exception ex)
@@ -76,29 +82,27 @@ namespace ChatServer
             }
 
             /// <summary>
-            /// Aceita conexão, verifica que tipo de utilizador é e inicia a Thread de interceção de Mensagens
+            /// Adiciona o cliente à lista de Clientes conectados e inicia o tratamento de mensagens do mesmo
             /// </summary>
-            private void ListenForClientConnections(TcpClient connectedTcpClient)
+            /// <param name="connectedTcpClient">Cliente a escutar</param>
+            private void ListenForClientMessages(TcpClient connectedTcpClient)
             {
                 ClientesConectados.Add(new Cliente(connectedTcpClient));
-                var connectedClient = ClientesConectados.Last();
+                Cliente clienteConectado = ClientesConectados.Last();
                 while (true)
                 {
                     try
                     {
-                        MessageHandler(connectedClient);
-                        // Thread.Sleep(1000);
+                        MessageHandler(clienteConectado);
                     }
-                    catch (Exception ex)
+                    catch (Exception e)
                     {
-                        Console.WriteLine(ex.Message);
+                        Console.WriteLine(e.Message);
                         Console.WriteLine("Um utilizador foi desconectado!");
-                        ClientesConectados.Remove(connectedClient);
+                        ClientesConectados.Remove(clienteConectado);
                         Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
                         return;
                     }
-
-                    // Thread.Sleep(1000);
                 }
             }
 
@@ -188,7 +192,7 @@ namespace ChatServer
             /// <param name="connectedClient">Cliente a escutar</param>
             private void MessageHandler(Cliente connectedClient)
             {
-                // Get Response
+                // Obtém a "Response" a tratar
                 Response response = Helpers.ReceiveSerializedMessage(connectedClient.TcpClient);
                 switch (response.Operacao)
                 {
@@ -221,7 +225,7 @@ namespace ChatServer
                         connectedClient.User.IsOnline = false;
                         // New user online
                         connectedClient = addNewUserOnline(connectedClient, user);
-                        Console.WriteLine($"Login efectuado: {connectedClient.User.Nome}");
+                        Console.WriteLine($"Login efetuado: {connectedClient.User.Nome}");
                         break;
                     }
                     case Response.Operation.GetUserInfo:
@@ -246,8 +250,7 @@ namespace ChatServer
             /// <summary>
             /// Trata da Mensagem recebida de um Utilizador (mensagem que o servidor recebe)
             /// <para>Guarda a Mensagem no ficheiro e envia para o destinatário caso este esteja online</para>
-            /// TODO: Testar Chat privado. Verificar se as mensagens são guardadas num ficheiro do servidor
-            /// TODO: Testar o mesmo para as Aulas
+            /// TODO: Ver o que se passa com as mensagens de UC's extra (não aparecem na outra pessoa??)
             /// </summary>
             /// <param name="mensagem">Mensagem a ser tratada</param>
             /// <param name="utilizador">Utilizador que a enviou</param>
@@ -279,7 +282,7 @@ namespace ChatServer
                 }
                 else if (int.Parse(mensagem.IdDestinatario) == 0)
                 {
-                    // Console.WriteLine("Mensagem: "+mensagem.Conteudo);
+                    // Console.WriteLine("Mensagem: " + mensagem.Conteudo);
                     // Mensagem para o Lobby
                     ClientesConectados.ForEach(cliente =>
                     {

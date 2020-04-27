@@ -16,168 +16,130 @@ namespace Models
 
         /// <summary>
         /// Envia mensagem serializada em Json
-        /// <para>1º - envia o tamanho da mensagem;</para>
-        /// 2º - envia a mensagem.
         /// </summary>
         /// <param name="tcpClient">Conexão TCP para onde enviar</param>
         /// <param name="obj">Dados a enviar</param>
-        public static void SendSerializedMessage(TcpClient tcpClient, object obj)
+        public static void SendSerializedMessage(TcpClient tcpClient, Response obj)
         {
             byte[] enviar = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(obj));
-            // tcpClient.Client.Send(BitConverter.GetBytes(enviar.Length));
-            // tcpClient.Client.Send(enviar);
-
-            // NetworkStream networkStream = tcpClient.GetStream();
-            // networkStream.Write(enviar, 0, enviar.Length);
-
             try
             {
                 Enviar(tcpClient.Client, enviar, 0, enviar.Length, 10000);
             }
             catch (Exception e)
             {
-                /*Console.WriteLine(e);
-                throw;*/
+                // Debug.WriteLine(e.Message);
             }
         }
 
         /// <summary>
         /// Recebe Mensagem serializada em Json
-        /// <para>1º - recebe o tamanho da mensagem que vai receber;</para>
-        ///     2º - cria um array de bytes com o tamanho recebido;
-        /// <para>3º - recebe a mensagem</para>
+        /// <para>Assim que tiver conteúdo disponível para receber recebe e transforma em objeto</para>
         /// </summary>
         /// <param name="tcpClient">Conexão TCP que vai receber os dados</param>
         /// <returns>"Response" com os dados dentro (objeto des-serializado)</returns>
         public static Response ReceiveSerializedMessage(TcpClient tcpClient)
         {
-            /*byte[] tamanho = new byte[4];
-            tcpClient.Client.Receive(tamanho);
-            byte[] mensagem = new byte[BitConverter.ToInt32(tamanho, 0)];
-            tcpClient.Client.Receive(mensagem);
-            return JsonConvert.DeserializeObject<Response>(Encoding.Unicode.GetString(mensagem));*/
-
-            /*StringBuilder mensagemCompleta = new StringBuilder();
-            NetworkStream networkStream = tcpClient.GetStream();
-
-            if (networkStream.CanRead)
-            {
-                byte[] bufferPequeno = new byte[1024];
-                int bytesLidos = 0;
-                do
-                {
-                    try
-                    {
-                        bytesLidos = networkStream.Read(bufferPequeno, bytesLidos, bufferPequeno.Length);
-                    }
-                    catch (Exception e)
-                    {
-                        Thread.Sleep(50);
-                    }
-
-                    mensagemCompleta.AppendFormat("{0}", Encoding.Unicode.GetString(bufferPequeno, 0, bytesLidos));
-                } while (networkStream.DataAvailable);
-            }
-
-            var t = mensagemCompleta.ToString();
-            return JsonConvert.DeserializeObject<Response>(mensagemCompleta.ToString());*/
-
-
-            // byte[] tamanho = new byte[4];
-            // tcpClient.Client.Receive(tamanho);
-            // byte[] mensagem = new byte[BitConverter.ToInt32(tamanho, 0)];
-            // tcpClient.Client.Receive(mensagem);
-            // return JsonConvert.DeserializeObject<Response>(Encoding.Unicode.GetString(mensagem));
-
             while (true)
             {
-                if (tcpClient.Available>0)
+                if (tcpClient.Available <= 0) continue;
+                byte[] buffer = new byte[tcpClient.Available];
+                try
                 {
-                    byte[] buffer = new byte[2048];
-                    try
-                    {
-                        Receber(tcpClient.Client, buffer, 0, tcpClient.Available, 10000);
-                        string jsonString = Encoding.Unicode.GetString(buffer, 0, buffer.Length);
-                        Response response = JsonConvert.DeserializeObject<Response>(jsonString);
-                        return response;
-                    }
-                    catch (Exception e)
-                    {
-                        /*Debug.WriteLine(ex.Message);
-                        Debug.WriteLine(ex.StackTrace);*/
-                    }
+                    Receber(tcpClient.Client, buffer, 0, tcpClient.Available, 10000);
+                    string jsonString = Encoding.Unicode.GetString(buffer, 0, buffer.Length);
+                    Response response = JsonConvert.DeserializeObject<Response>(jsonString);
+                    return response;
+                }
+                catch (Exception e)
+                {
+                    // Debug.WriteLine(e.Message);
                 }
             }
         }
 
+        /// <summary>
+        /// Envia bytes pelo TCP Client
+        /// </summary>
+        /// <param name="socket">Socket do TCP Client</param>
+        /// <param name="buffer">Buffer de bytes a enviar</param>
+        /// <param name="offset">Posição inicial de envio de bytes</param>
+        /// <param name="size">Quantidade de bytes a enviar</param>
+        /// <param name="timeout">Tempo máximo para o envio</param>
+        /// <exception cref="Exception">Erro</exception>
         private static void Enviar(Socket socket, byte[] buffer, int offset, int size, int timeout)
         {
-            int startTickCount = Environment.TickCount;
-            int sent = 0;  // how many bytes is already sent
-            do {
-                if (Environment.TickCount > startTickCount + timeout)
-                    throw new Exception("Timeout.");
-                try {
-                    sent += socket.Send(buffer, offset + sent, size - sent, SocketFlags.None);
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock ||
-                        ex.SocketErrorCode == SocketError.IOPending ||
-                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
-                    {
-                        // socket buffer is probably full, wait and try again
-                        Thread.Sleep(30);
-                    }
-                    else
-                        throw ex;  // any serious error occurr
-                }
-            } while (sent < size);
-        }
-
-        private static void Receber(Socket socket, byte[] buffer, int offset, int size, int timeout)
-        {
-            int startTickCount = Environment.TickCount;
-            int received = 0;  // how many bytes is already received
+            int startTickCount = Environment.TickCount, bytesEnviados = 0;
             do
             {
                 if (Environment.TickCount > startTickCount + timeout)
+                {
                     throw new Exception("Timeout.");
+                }
+
                 try
                 {
-                    received += socket.Receive(buffer, offset + received, size - received, SocketFlags.None);
+                    bytesEnviados += socket.Send(buffer, offset + bytesEnviados, size - bytesEnviados,
+                        SocketFlags.None);
                 }
-                catch (SocketException ex)
+                catch (SocketException e)
                 {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock ||
-                        ex.SocketErrorCode == SocketError.IOPending ||
-                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
+                    if (e.SocketErrorCode == SocketError.WouldBlock || e.SocketErrorCode == SocketError.IOPending ||
+                        e.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
                     {
-                        // socket buffer is probably empty, wait and try again
+                        // Buffer cheio, esperar
                         Thread.Sleep(30);
                     }
                     else
-                        throw ex;  // any serious error occurr
+                    {
+                        // Erro real
+                        throw;
+                    }
                 }
-            } while (received < size);
+            } while (bytesEnviados < size);
         }
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
+        /// <summary>
+        /// Recebe bytes do TCP Client
+        /// </summary>
+        /// <param name="socket">Socket do TCP Client</param>
+        /// <param name="buffer">Buffer onde guardar os bytes</param>
+        /// <param name="offset">Posição inicial de receção de bytes</param>
+        /// <param name="size">Quantidade de bytes a receber</param>
+        /// <param name="timeout">Tempo máximo para a receção</param>
+        /// <exception cref="Exception">Erro</exception>
+        private static void Receber(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        {
+            int startTickCount = Environment.TickCount, bytesRecebidos = 0;
+            do
+            {
+                if (Environment.TickCount > startTickCount + timeout)
+                {
+                    throw new Exception("Timeout.");
+                }
+
+                try
+                {
+                    bytesRecebidos += socket.Receive(buffer, offset + bytesRecebidos, size - bytesRecebidos,
+                        SocketFlags.None);
+                }
+                catch (SocketException e)
+                {
+                    if (e.SocketErrorCode == SocketError.WouldBlock || e.SocketErrorCode == SocketError.IOPending ||
+                        e.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
+                    {
+                        // Buffer vazio, esperar
+                        Thread.Sleep(30);
+                    }
+                    else
+                    {
+                        // Erro real
+                        throw;
+                    }
+                }
+            } while (bytesRecebidos < size);
+        }
+
         /// <summary>
         /// Verifica se um determinado Utilizador está online
         /// </summary>

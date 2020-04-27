@@ -107,7 +107,8 @@
                             HorizontalAlignment="Left" Margin="0,0,5,0" />
                     <TextBlock Name="TextBlockUtilizadorLigado" VerticalAlignment="Center" FontWeight="Bold" />
                 </StackPanel>
-                <Button Click="ButtonSair_Click" Content="🚪" Grid.Column="1" FontSize="15" ToolTip="Sair" Background="Transparent"
+                <Button Click="ButtonSair_Click" Content="🚪" Grid.Column="1" FontSize="15" ToolTip="Sair"
+                        Background="Transparent"
                         BorderThickness="0" Margin="10,0,0,0" />
             </Grid>
             <Grid DockPanel.Dock="Bottom" VerticalAlignment="Center" Margin="0,10,10,10">
@@ -116,8 +117,10 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button Click="EnviarFicheiro_OnClick" Content="📎" Grid.Column="0" FontSize="15" ToolTip="Enviar ficheiro" Margin="0,0,10,0" Padding="5,0,5,0" HorizontalAlignment="Left"></Button>
-                <TextBox Name="TextBoxMensagem" Grid.Column="1" Height="Auto" MaxHeight="50" FontSize="15" AcceptsReturn="True"
+                <Button Click="EnviarFicheiro_OnClick" Content="📎" Grid.Column="0" FontSize="15"
+                        ToolTip="Enviar ficheiro" Margin="0,0,10,0" Padding="5,0,5,0" HorizontalAlignment="Left" />
+                <TextBox Name="TextBoxMensagem" Grid.Column="1" Height="Auto" MaxHeight="50" FontSize="15"
+                         AcceptsReturn="True"
                          SpellCheck.IsEnabled="True" Language="pt-PT" TextWrapping="Wrap" HorizontalAlignment="Stretch"
                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" />
                 <Button Click="EnviarMensagem_OnClick" Content="Enviar" Grid.Column="2" FontSize="15" Margin="10,0,0,0"
