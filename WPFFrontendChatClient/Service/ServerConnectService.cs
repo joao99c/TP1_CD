@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -65,6 +66,9 @@ namespace WPFFrontendChatClient.Service
             MessageHandler();
         }
 
+        /// <summary>
+        /// Trata as mensagens recebidas
+        /// </summary>
         private void MessageHandler()
         {
             Thread messageHandlerThread = new Thread(() =>
@@ -110,10 +114,6 @@ namespace WPFFrontendChatClient.Service
                         {
                             break;
                         }
-                        default:
-                        {
-                            throw new ArgumentOutOfRangeException();
-                        }
                     }
                 }
             });
@@ -128,6 +128,20 @@ namespace WPFFrontendChatClient.Service
         {
             Response resp = new Response(Response.Operation.SendMessage, UtilizadorLigado, mensagem);
             Helpers.SendSerializedMessage(_tcpClient, resp);
+        }
+
+        /// <summary>
+        /// Cria a Mensagem e Response para o envio do ficheiro.
+        /// <para>Executa o procedimento de envio de ficheiro.</para>
+        /// </summary>
+        /// <param name="caminhoFicheiro">Caminho do ficheiro</param>
+        /// <param name="mensagem">Mensagem a aparecer no chat</param>
+        public void EnviarFicheiro(string caminhoFicheiro, Mensagem mensagem)
+        {
+            // Criar mensagem para aparecer no chat
+            Response resp = new Response(Response.Operation.SendFile, UtilizadorLigado, mensagem);
+            Helpers.SendSerializedMessage(_tcpClient, resp);
+            Helpers.SendFile(_tcpClient, Path.GetExtension(caminhoFicheiro), caminhoFicheiro);
         }
     }
 }

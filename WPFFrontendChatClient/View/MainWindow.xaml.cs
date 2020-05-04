@@ -154,41 +154,54 @@ namespace WPFFrontendChatClient.View
         /// <param name="e"></param>
         private void EnviarMensagem_OnClick(object sender, RoutedEventArgs e)
         {
-            TabItem destinatarioTabItem = (TabItem) ChatTabControl.SelectedItem;
-            string nomeDestinatarioTemp;
-            Mensagem mensagem;
-            if (destinatarioTabItem.Header.ToString().Contains(" ("))
-            {
-                // Se for uma mensagem privada
-                nomeDestinatarioTemp = destinatarioTabItem.Header.ToString().Substring(0,
-                    destinatarioTabItem.Header.ToString().IndexOf(" (", StringComparison.Ordinal));
-                mensagem = new Mensagem(MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString(),
-                    MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
-                    MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name.Remove(0, 2),
-                    nomeDestinatarioTemp, TextBoxMensagem.Text);
-            }
-            else
-            {
-                // Se for uma mensagem para uma Aula
-                nomeDestinatarioTemp = destinatarioTabItem.Header.ToString();
-                mensagem = new Mensagem(MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString(),
-                    MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
-                    MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name,
-                    nomeDestinatarioTemp, TextBoxMensagem.Text);
-            }
-
+            Mensagem mensagem = ConstruirMensagem(TextBoxMensagem.Text);
             DisplayMensagem(mensagem);
             MainViewModel.ServerConnectService.EnviarMensagem(mensagem);
             TextBoxMensagem.Text = "";
             TextBoxMensagem.Focus();
         }
 
+        /// <summary>
+        /// Cria a mensagem.
+        /// <para>Abre a janela de seleção de ficheiro (se o separador selecionado não for o do "Lobby").</para>
+        /// Chama a função que envia o ficheiro para o servidor.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void EnviarFicheiro_OnClick(object sender, RoutedEventArgs e)
         {
+            if (((TabItem) ChatTabControl.SelectedItem).Name.Contains("id0")) return;
+            Mensagem mensagem = ConstruirMensagem("ficheiro");
             OpenFileDialog fileDialog = new OpenFileDialog();
             bool? resultado = fileDialog.ShowDialog();
             if (resultado == false) return;
             string caminhoFicheiro = fileDialog.FileName;
+            MainViewModel.ServerConnectService.EnviarFicheiro(caminhoFicheiro, mensagem);
+        }
+
+        /// <summary>
+        /// Constrói uma Mensagem com um determinado conteúdo
+        /// </summary>
+        /// <param name="conteudo">Conteúdo da Mensagem</param>
+        /// <returns></returns>
+        private Mensagem ConstruirMensagem(string conteudo)
+        {
+            TabItem destinatarioTabItem = (TabItem) ChatTabControl.SelectedItem;
+            if (destinatarioTabItem.Header.ToString().Contains(" ("))
+            {
+                // Se for uma mensagem privada
+                return new Mensagem(MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString(),
+                    MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
+                    MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name.Remove(0, 2),
+                    destinatarioTabItem.Header.ToString().Substring(0,
+                        destinatarioTabItem.Header.ToString().IndexOf(" (", StringComparison.Ordinal)), conteudo);
+            }
+
+            // Se for uma mensagem para uma Aula
+            return new Mensagem(MainViewModel.ServerConnectService.UtilizadorLigado.Id.ToString(),
+                MainViewModel.ServerConnectService.UtilizadorLigado.Nome,
+                MainViewModel.ServerConnectService.UtilizadorLigado.Email, destinatarioTabItem.Name,
+                destinatarioTabItem.Header.ToString(), conteudo);
         }
 
         /// <summary>

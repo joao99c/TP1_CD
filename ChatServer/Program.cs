@@ -42,6 +42,7 @@ namespace ChatServer
                 ClientesConectados = new List<Cliente>();
                 Directory.CreateDirectory(ProjectDir + "\\Chats");
                 Directory.CreateDirectory(ProjectDir + "\\Utilizadores");
+                Directory.CreateDirectory(ProjectDir + "\\Ficheiros");
                 if (!File.Exists(Helpers.UsersFilePath))
                 {
                     using (File.CreateText(Helpers.UsersFilePath))
@@ -189,11 +190,11 @@ namespace ChatServer
             /// Tratador de conexão
             /// <para>Recebe mensagens e trata-as de acordo com o seu tipo</para>
             /// </summary>
-            /// <param name="connectedClient">Cliente a escutar</param>
-            private void MessageHandler(Cliente connectedClient)
+            /// <param name="clienteConectado">Cliente a escutar</param>
+            private void MessageHandler(Cliente clienteConectado)
             {
                 // Obtém a "Response" a tratar
-                Response response = Helpers.ReceiveSerializedMessage(connectedClient.TcpClient);
+                Response response = Helpers.ReceiveSerializedMessage(clienteConectado.TcpClient);
                 switch (response.Operacao)
                 {
                     case Response.Operation.EntrarChat:
@@ -204,6 +205,11 @@ namespace ChatServer
                     {
                         SendMessage(response.Mensagem, response.Utilizador);
                         // Console.WriteLine(response.Mensagem.Conteudo);
+                        break;
+                    }
+                    case Response.Operation.SendFile:
+                    {
+                        Helpers.ReceiveFile(clienteConectado.TcpClient, response.Mensagem);
                         break;
                     }
                     case Response.Operation.LeaveChat:
@@ -220,12 +226,12 @@ namespace ChatServer
                             user.TipoUtilizador = Utilizador.UserType.Prof;
                         }
 
-                        connectedClient.User = user;
+                        clienteConectado.User = user;
                         // Antes do Login no Programa
-                        connectedClient.User.IsOnline = false;
+                        clienteConectado.User.IsOnline = false;
                         // New user online
-                        connectedClient = addNewUserOnline(connectedClient, user);
-                        Console.WriteLine($"Login efetuado: {connectedClient.User.Nome}");
+                        clienteConectado = addNewUserOnline(clienteConectado, user);
+                        Console.WriteLine($"Login efetuado: {clienteConectado.User.Nome}");
                         break;
                     }
                     case Response.Operation.GetUserInfo:

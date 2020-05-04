@@ -14,14 +14,17 @@ namespace Models
         public static readonly string UsersFilePath =
             Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Utilizadores\\users.txt";
 
+        private static readonly string FilesFolder =
+            Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Ficheiros\\";
+
         /// <summary>
         /// Envia mensagem serializada em Json
         /// </summary>
         /// <param name="tcpClient">Conexão TCP para onde enviar</param>
-        /// <param name="obj">Dados a enviar</param>
-        public static void SendSerializedMessage(TcpClient tcpClient, Response obj)
+        /// <param name="response">Dados a enviar</param>
+        public static void SendSerializedMessage(TcpClient tcpClient, Response response)
         {
-            byte[] enviar = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(obj));
+            byte[] enviar = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(response));
             try
             {
                 Enviar(tcpClient.Client, enviar, 0, enviar.Length, 10000);
@@ -55,6 +58,70 @@ namespace Models
                 {
                     // Debug.WriteLine(e.Message);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Envia um ficheiro e a sua informação para o Servidor
+        /// <para>- Envia a extensão;</para>
+        /// - Envia o tamanho do ficheiro;
+        /// <para>- Envia o ficheiro.</para>
+        /// </summary>
+        /// <param name="tcpClient">Cliente que envia o ficheiro</param>
+        /// <param name="extensao">Extensão do ficheiro</param>
+        /// <param name="caminhoFicheiro">Caminho do ficheiro</param>
+        public static void SendFile(TcpClient tcpClient, string extensao, string caminhoFicheiro)
+        {
+            byte[] extensaoBytes = Encoding.Unicode.GetBytes(extensao);
+            byte[] extensaoSizeBytes = new byte[4];
+            extensaoSizeBytes = BitConverter.GetBytes(extensaoBytes.Length);
+            byte[] ficheiroBytes = File.ReadAllBytes(caminhoFicheiro);
+            byte[] ficheiroSizeBytes = new byte[4];
+            ficheiroSizeBytes = BitConverter.GetBytes(ficheiroBytes.Length);
+            NetworkStream networkStream = tcpClient.GetStream();
+            networkStream.Write(extensaoSizeBytes, 0, extensaoSizeBytes.Length);
+            networkStream.Write(extensaoBytes, 0, extensaoBytes.Length);
+            networkStream.Write(ficheiroSizeBytes, 0, ficheiroSizeBytes.Length);
+            tcpClient.Client.SendFile(caminhoFicheiro);
+        }
+
+        /// <summary>
+        /// Recebe um ficheiro
+        /// <para>- Recebe a extensão;</para>
+        /// - Recebe o tamanho do ficheiro;
+        /// <para>- Recebe o ficheiro;</para>
+        /// - Guarda o ficheiro.
+        /// </summary>
+        /// <param name="tcpClient">Cliente que recebe o ficheiro</param>
+        /// <param name="mensagem">Mensagem que irá aparecer no chat com o nome do ficheiro</param>
+        public static void ReceiveFile(TcpClient tcpClient, Mensagem mensagem)
+        {
+            // TODO: Tratar da "mensagem" que vai aparecer no chat.
+            // TODO: Guardar a mensagem no ficheiro com "SaveMessageInFile"
+
+            NetworkStream networkStream = tcpClient.GetStream();
+            byte[] extensaoSizeBytes = new byte[4];
+            networkStream.Read(extensaoSizeBytes, 0, extensaoSizeBytes.Length);
+            byte[] extensaoBytes = new byte[BitConverter.ToInt32(extensaoSizeBytes, 0)];
+            networkStream.Read(extensaoBytes, 0, extensaoBytes.Length);
+            byte[] ficheiroSizeBytes = new byte[4];
+            networkStream.Read(ficheiroSizeBytes, 0, ficheiroSizeBytes.Length);
+            int ficheiroSizeInt = BitConverter.ToInt32(ficheiroSizeBytes, 0);
+
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                byte[] buffer = new byte[1024];
+                int bytesLidos, totalBytesLidos = 0;
+                while ((ficheiroSizeInt - totalBytesLidos) > 0)
+                {
+                    bytesLidos = networkStream.Read(buffer, 0, buffer.Length);
+                    totalBytesLidos += bytesLidos;
+                    memoryStream.Write(buffer, 0, bytesLidos);
+                }
+
+                File.WriteAllBytes(
+                    $"{FilesFolder}\\{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{Encoding.Unicode.GetString(extensaoBytes, 0, extensaoBytes.Length)}",
+                    memoryStream.ToArray());
             }
         }
 
@@ -219,11 +286,11 @@ namespace Models
         /// <param name="filename">Nome do ficheiro onde guardar</param>
         public static void SaveMessageInFile(Mensagem mensagem, string filename)
         {
-            string projectDirectory = $"{Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName}\\Chats\\";
+            string chatsDirectory = $"{Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName}\\Chats\\";
             // Cria/Abre ficheiro para escrever
-            using (StreamWriter streamWriter = !File.Exists(projectDirectory + filename)
-                ? File.CreateText(projectDirectory + filename)
-                : File.AppendText(projectDirectory + filename))
+            using (StreamWriter streamWriter = !File.Exists(chatsDirectory + filename)
+                ? File.CreateText(chatsDirectory + filename)
+                : File.AppendText(chatsDirectory + filename))
             {
                 streamWriter.WriteLine(JsonConvert.SerializeObject(mensagem));
             }

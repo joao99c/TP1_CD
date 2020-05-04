@@ -13,7 +13,8 @@ namespace Models
             LeaveChat,
             SendMessage,
             GetUserInfo,
-            NewUserOnline
+            NewUserOnline,
+            SendFile
         }
 
         public Operation Operacao { get; set; }
@@ -35,43 +36,6 @@ namespace Models
             Operacao = operacao;
             Mensagem = mensagem;
             Utilizador = utilizador;
-            /*switch (operacao)
-            {
-                case Operation.EntrarChat:
-                {
-                    break;
-                }
-                case Operation.LeaveChat:
-                {
-                    break;
-                }
-                case Operation.SendMessage:
-                {
-                    Mensagem = mensagem;
-                    break;
-                }
-                case Operation.GetUserInfo:
-                {
-                    Mensagem = mensagem;
-                    break;
-                }
-                case Operation.Login:
-                {
-                    break;
-                }
-                case Operation.BlockLogin:
-                {
-                    break;
-                }
-                case Operation.NewUserOnline:
-                {
-                    break;
-                }
-                default:
-                {
-                    throw new ArgumentOutOfRangeException();
-                }
-            }*/
         }
 
         /*public static void SendStringMessage(NetworkStream ns, string msg)
