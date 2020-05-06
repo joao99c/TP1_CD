@@ -63,11 +63,6 @@ namespace WPFFrontendChatClient.ViewModel
             ServerConnectService.AddAlunoEvent += AddAlunoLista;
             ServerConnectService.AddMensagemRecebidaEventScs += AddMensagemRecebidaChat;
             ServerConnectService.AddUnidadeCurricularEvent += AddUnidadeCurricularLista;
-
-            ServerConnectService.IpAddress = "tp1cd.ddns.net";
-            // ServerConnectService.IpAddress = "192.168.1.65";
-
-            ServerConnectService.Port = int.Parse("1000");
             ServerConnectService.Start(utilizador);
         }
 
@@ -128,7 +123,7 @@ namespace WPFFrontendChatClient.ViewModel
 
         private void AddProfessorTesteAction()
         {
-            Professores.Add(new Utilizador(++_numAux, "Professor " + _numAux, "professor" + _numAux,
+            Professores.Add(new Utilizador(++_numAux, "Professor " + _numAux, "professor" + _numAux + "@ipca.pt",
                 Utilizador.UserType.Prof,
                 new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)));
         }

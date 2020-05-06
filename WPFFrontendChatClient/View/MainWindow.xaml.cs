@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -30,6 +29,10 @@ namespace WPFFrontendChatClient.View
         private MainViewModel MainViewModel { get; set; }
         private List<TabItem> TabItems { get; set; }
 
+        /// <summary>
+        /// Construtor da MainWindow
+        /// <para>Inicializa o componente de "ativa" a escuta de eventos</para>
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
@@ -53,7 +56,7 @@ namespace WPFFrontendChatClient.View
         {
             AuthenticationResult authResult = null;
             IPublicClientApplication app = App.PublicClientApp;
-            IEnumerable<IAccount> accounts = await app.GetAccountsAsync();
+            IEnumerable<IAccount> accounts = (await app.GetAccountsAsync()).ToList();
             IAccount firstAccount = accounts.FirstOrDefault();
             try
             {
@@ -63,7 +66,7 @@ namespace WPFFrontendChatClient.View
             {
                 // A MsalUiRequiredException happened on AcquireTokenSilent. 
                 // This indicates you need to call AcquireTokenInteractive to acquire a token
-                Debug.WriteLine($"MsalUiRequiredException: {ex.Message}");
+                Console.WriteLine(@"MsalUiRequiredException: " + ex.Message);
                 try
                 {
                     authResult = await app.AcquireTokenInteractive(_scopes).WithAccount(accounts.FirstOrDefault())
@@ -73,16 +76,15 @@ namespace WPFFrontendChatClient.View
                 catch (MsalException msalex)
                 {
                     // Erro ao adquirir Token
-                    MessageBox.Show("Erro ao adquirir Token: " + msalex);
-                    // ResultText.Text = $"Error Acquiring Token:{Environment.NewLine}{msalex}";
+                    MessageBox.Show("Erro ao adquirir Token: " + msalex,
+                        "WPFFrontendChatClient: MainWindow.ButtonEntrar_Click");
                 }
             }
             catch (Exception ex)
             {
                 // Erro ao adquirir Token Silenciosamente
-                MessageBox.Show("Erro ao adquirir Token Silenciosamente: " + ex);
-                // ResultText.Text = $"Error Acquiring Token Silently:{Environment.NewLine}{ex}";
-                return;
+                MessageBox.Show("Erro ao adquirir Token Silenciosamente: " + ex,
+                    "WPFFrontendChatClient: MainWindow.ButtonEntrar_Click");
             }
 
             if (authResult == null) return;
@@ -118,7 +120,8 @@ namespace WPFFrontendChatClient.View
             }
             catch (Exception ex)
             {
-                return ex.ToString();
+                MessageBox.Show(ex.Message, "WPFFrontendChatClient: MainWindow.GetHttpContentWithToken");
+                return ex.Message;
             }
         }
 
@@ -129,7 +132,7 @@ namespace WPFFrontendChatClient.View
         /// <param name="e"></param>
         private async void ButtonSair_Click(object sender, RoutedEventArgs e)
         {
-            IEnumerable<IAccount> accounts = await App.PublicClientApp.GetAccountsAsync();
+            IEnumerable<IAccount> accounts = (await App.PublicClientApp.GetAccountsAsync()).ToList();
             if (!accounts.Any()) return;
             try
             {
@@ -140,8 +143,7 @@ namespace WPFFrontendChatClient.View
             catch (MsalException ex)
             {
                 // Erro ao Sair
-                MessageBox.Show("Erro ao Terminar Sessão: " + ex.Message);
-                // ResultText.Text = $"Error signing-out user: {ex.Message}";
+                MessageBox.Show(ex.Message, "WPFFrontendChatClient: MainWindow.ButtonSair_Click");
             }
         }
 
@@ -300,10 +302,8 @@ namespace WPFFrontendChatClient.View
             bool existeTabIgual = false;
             TabItems.ForEach(tab =>
             {
-                if ((string) tab.Header == tabHeader)
-                {
-                    existeTabIgual = true;
-                }
+                if ((string) tab.Header != tabHeader) return;
+                existeTabIgual = true;
             });
             if (existeTabIgual) return;
             ChatTabControl.DataContext = null;

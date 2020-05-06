@@ -28,6 +28,9 @@ namespace ChatServer
             private TcpListener TcpListener { get; set; }
             private List<Cliente> ClientesConectados { get; set; }
 
+            /// <summary>
+            /// Construtor do servidor
+            /// </summary>
             public Server()
             {
                 TcpListener = new TcpListener(IPAddress.Parse("192.168.1.4"), 1000);
@@ -70,14 +73,14 @@ namespace ChatServer
                         Console.WriteLine("Connected!");
                         // Console.WriteLine(GetState(client));
 
-                        Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
+                        Console.WriteLine("Utilizadores ligados: " + ClientesConectados.Count);
                         Thread connectionThread = new Thread(() => ListenForClientMessages(client));
                         connectionThread.Start();
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine(ex);
-                        Console.WriteLine(ex.Message);
+                        Console.WriteLine("ChatServer: Program.AcceptTcpClient");
+                        Console.WriteLine("\t" + ex.Message);
                     }
                 }
             }
@@ -96,12 +99,13 @@ namespace ChatServer
                     {
                         MessageHandler(clienteConectado);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        Console.WriteLine(e.Message);
+                        Console.WriteLine("ChatServer: Program.ListenForClientMessages");
+                        Console.WriteLine(ex.Message);
                         Console.WriteLine("Um utilizador foi desconectado!");
                         ClientesConectados.Remove(clienteConectado);
-                        Console.WriteLine($"Utilizadores ligados: {ClientesConectados.Count}");
+                        Console.WriteLine("Utilizadores ligados: " + ClientesConectados.Count);
                         return;
                     }
                 }
@@ -119,10 +123,9 @@ namespace ChatServer
             private Cliente addNewUserOnline(Cliente connectedCliente, Utilizador utilizadorConectar)
             {
                 Utilizador utilizadorEncontrado = Helpers.GetUserConnected(ClientesConectados, utilizadorConectar);
-                // Se for um cliente já conectado
                 if (utilizadorEncontrado != null)
                 {
-                    // Console.WriteLine("O utilizador já estava online");
+                    // Se for um Utilizador já conectado
                     connectedCliente.User = utilizadorEncontrado;
                     Response responseBlockedLogin = new Response(Response.Operation.BlockLogin, connectedCliente.User);
                     // TODO: Não deixar entrar porque já existe alguém online (IMPLEMENTAR BLOQUEIO NO WPF)
@@ -131,17 +134,16 @@ namespace ChatServer
                 }
 
                 utilizadorEncontrado = Helpers.GetRegisteredUser(utilizadorConectar);
-                // Se for um utilizador já registado
                 if (utilizadorEncontrado != null)
                 {
-                    // Console.WriteLine("O utilizador já estava registado");
+                    // Se for um Utilizador já registado
                     connectedCliente.User = utilizadorEncontrado;
                 }
 
-                // Regista e guarda o Utilizador
-                // TODO: Get User information (Curso, horário etc)
                 if (utilizadorEncontrado == null)
                 {
+                    // Se for um Utilizador novo
+                    // TODO: Get User information (Curso, horário etc)
                     connectedCliente.User = Helpers.SaveUserInFile(utilizadorConectar);
                 }
 
@@ -158,7 +160,7 @@ namespace ChatServer
                 // FIM FAKE INFO
 
                 /*
-                 * É um utilizador novo:
+                 * Novo Utilizador ligado:
                  *     1 - Envia a informação completa do Utilizador para ele próprio;
                  *     2 - Enviar para todos os Utilizadores o novo Utilizador online;
                  *     3 - Enviar para o novo Utilizador todos os outros Utilizadores online;
@@ -169,18 +171,19 @@ namespace ChatServer
                 Helpers.SendSerializedMessage(connectedCliente.TcpClient, resUpdateUserInfo);
 
                 // 2
-                Response euParaClientesConectados =
+                Response novoUtilizadorParaClientesConectados =
                     new Response(Response.Operation.NewUserOnline, connectedCliente.User);
                 ClientesConectados.ForEach(clienteConectado =>
                 {
                     if (clienteConectado.User.Email == connectedCliente.User.Email) return;
                     // 2
-                    Helpers.SendSerializedMessage(clienteConectado.TcpClient, euParaClientesConectados);
+                    Helpers.SendSerializedMessage(clienteConectado.TcpClient, novoUtilizadorParaClientesConectados);
                     // Console.WriteLine($"Novo Utilizador Online enviado para {clienteConectado.User.Nome}!");
 
                     //3
-                    Response outrosParaEu = new Response(Response.Operation.NewUserOnline, clienteConectado.User);
-                    Helpers.SendSerializedMessage(connectedCliente.TcpClient, outrosParaEu);
+                    Response clientesConectadosParaNovoUtilizador =
+                        new Response(Response.Operation.NewUserOnline, clienteConectado.User);
+                    Helpers.SendSerializedMessage(connectedCliente.TcpClient, clientesConectadosParaNovoUtilizador);
                     // Console.WriteLine($"{clienteConectado.User.Nome} enviado para novo Utilizador Online!");
                 });
                 return connectedCliente;
@@ -193,6 +196,8 @@ namespace ChatServer
             /// <param name="clienteConectado">Cliente a escutar</param>
             private void MessageHandler(Cliente clienteConectado)
             {
+                // TODO: Quando o WPF é fechado a conexão não cai!
+                
                 // Obtém a "Response" a tratar
                 Response response = Helpers.ReceiveSerializedMessage(clienteConectado.TcpClient);
                 switch (response.Operacao)
@@ -204,12 +209,26 @@ namespace ChatServer
                     case Response.Operation.SendMessage:
                     {
                         SendMessage(response.Mensagem, response.Utilizador);
-                        // Console.WriteLine(response.Mensagem.Conteudo);
                         break;
                     }
                     case Response.Operation.SendFile:
                     {
-                        Helpers.ReceiveFile(clienteConectado.TcpClient, response.Mensagem);
+                        Helpers.ReceiveFile(clienteConectado.TcpClient, response.Mensagem,
+                            out Mensagem mensagemModificada);
+
+                        // TODO: Criar nova Operation para a response??                ⬇ (SendMessageFile)
+
+                        Response responseModificada = new Response(Response.Operation.SendMessage,
+                            clienteConectado.User, mensagemModificada);
+
+                        string filename = mensagemModificada.IdDestinatario + ".txt";
+                        Helpers.SaveMessageInFile(mensagemModificada, filename);
+
+                        ClientesConectados.ForEach(cliente =>
+                        {
+                            if (!cliente.User.IsOnline) return;
+                            Helpers.SendSerializedMessage(cliente.TcpClient, responseModificada);
+                        });
                         break;
                     }
                     case Response.Operation.LeaveChat:
@@ -227,11 +246,11 @@ namespace ChatServer
                         }
 
                         clienteConectado.User = user;
-                        // Antes do Login no Programa
+                        // Antes do Login no Chat
                         clienteConectado.User.IsOnline = false;
-                        // New user online
+                        // Login no Chat
                         clienteConectado = addNewUserOnline(clienteConectado, user);
-                        Console.WriteLine($"Login efetuado: {clienteConectado.User.Nome}");
+                        Console.WriteLine("Login efetuado: " + clienteConectado.User.Nome);
                         break;
                     }
                     case Response.Operation.GetUserInfo:
@@ -246,10 +265,6 @@ namespace ChatServer
                     {
                         break;
                     }
-                    default:
-                    {
-                        throw new ArgumentOutOfRangeException();
-                    }
                 }
             }
 
@@ -263,8 +278,8 @@ namespace ChatServer
             private void SendMessage(Mensagem mensagem, Utilizador utilizador)
             {
                 // Filename:
-                // Aula: uc10
-                // MP: 15310_15315 
+                //     - Aula: uc10
+                //     - MP: 15310_15315 
                 // Lobby: idDestinatario = 0 
 
                 string filename = null;
@@ -288,7 +303,6 @@ namespace ChatServer
                 }
                 else if (int.Parse(mensagem.IdDestinatario) == 0)
                 {
-                    // Console.WriteLine("Mensagem: " + mensagem.Conteudo);
                     // Mensagem para o Lobby
                     ClientesConectados.ForEach(cliente =>
                     {

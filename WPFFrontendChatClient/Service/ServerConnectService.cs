@@ -10,10 +10,9 @@ namespace WPFFrontendChatClient.Service
 {
     public class ServerConnectService
     {
-        private TcpClient _tcpClient;
-        private IPEndPoint _ipEndPoint;
-        public string IpAddress { get; set; }
-        public int Port { get; set; }
+        private readonly TcpClient _tcpClient;
+        private string IpAddress { get; set; }
+        private int Port { get; set; }
         public Utilizador UtilizadorLigado { get; set; }
 
         public delegate void AddAlunoAction(Utilizador utilizador);
@@ -28,8 +27,21 @@ namespace WPFFrontendChatClient.Service
 
         public event AddUnidadeCurricularAction AddUnidadeCurricularEvent;
 
+        /// <summary>
+        /// Construtor do ServerConnectService
+        /// <para>Estabelece ligação com o servidor.</para>
+        /// </summary>
         public ServerConnectService()
         {
+            IpAddress = "tp1cd.ddns.net";
+            // IpAddress = "192.168.1.65";
+            Port = int.Parse("1000");
+
+            // IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            IPEndPoint ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+
+            _tcpClient = new TcpClient();
+            _tcpClient.Connect(ipEndPoint);
         }
 
         /// <summary>
@@ -38,11 +50,6 @@ namespace WPFFrontendChatClient.Service
         /// <param name="utilizador">Utilizador que vai iniciar conexão</param>
         public void Start(Utilizador utilizador)
         {
-            // _ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
-            _ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
-
-            _tcpClient = new TcpClient();
-            _tcpClient.Connect(_ipEndPoint);
             Response resLogin = new Response(Response.Operation.Login, utilizador);
             Helpers.SendSerializedMessage(_tcpClient, resLogin);
             // Espera pela mensagem do servidor com os dados do user.

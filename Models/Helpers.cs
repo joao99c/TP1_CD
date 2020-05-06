@@ -29,9 +29,10 @@ namespace Models
             {
                 Enviar(tcpClient.Client, enviar, 0, enviar.Length, 10000);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                // Debug.WriteLine(e.Message);
+                Console.WriteLine("Models: Helpers.SendSerializedMessage");
+                Console.WriteLine("\t" + ex.Message);
             }
         }
 
@@ -54,9 +55,10 @@ namespace Models
                     Response response = JsonConvert.DeserializeObject<Response>(jsonString);
                     return response;
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    // Debug.WriteLine(e.Message);
+                    Console.WriteLine("Models: Helpers.ReceiveSerializedMessage");
+                    Console.WriteLine("\t" + ex.Message);
                 }
             }
         }
@@ -94,11 +96,9 @@ namespace Models
         /// </summary>
         /// <param name="tcpClient">Cliente que recebe o ficheiro</param>
         /// <param name="mensagem">Mensagem que irá aparecer no chat com o nome do ficheiro</param>
-        public static void ReceiveFile(TcpClient tcpClient, Mensagem mensagem)
+        /// <param name="mensagemModificada">Parâmetro de saída de Mensagem com o nome do ficheiro no seu conteúdo</param>
+        public static void ReceiveFile(TcpClient tcpClient, Mensagem mensagem, out Mensagem mensagemModificada)
         {
-            // TODO: Tratar da "mensagem" que vai aparecer no chat.
-            // TODO: Guardar a mensagem no ficheiro com "SaveMessageInFile"
-
             NetworkStream networkStream = tcpClient.GetStream();
             byte[] extensaoSizeBytes = new byte[4];
             networkStream.Read(extensaoSizeBytes, 0, extensaoSizeBytes.Length);
@@ -108,6 +108,8 @@ namespace Models
             networkStream.Read(ficheiroSizeBytes, 0, ficheiroSizeBytes.Length);
             int ficheiroSizeInt = BitConverter.ToInt32(ficheiroSizeBytes, 0);
 
+            string nomeFicheiro =
+                $"{FilesFolder}\\{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{Encoding.Unicode.GetString(extensaoBytes, 0, extensaoBytes.Length)}";
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 byte[] buffer = new byte[1024];
@@ -119,10 +121,11 @@ namespace Models
                     memoryStream.Write(buffer, 0, bytesLidos);
                 }
 
-                File.WriteAllBytes(
-                    $"{FilesFolder}\\{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{Encoding.Unicode.GetString(extensaoBytes, 0, extensaoBytes.Length)}",
-                    memoryStream.ToArray());
+                File.WriteAllBytes(nomeFicheiro, memoryStream.ToArray());
             }
+
+            mensagem.Conteudo = "Ficheiro: " + Path.GetFileName(nomeFicheiro);
+            mensagemModificada = mensagem;
         }
 
         /// <summary>
@@ -149,10 +152,10 @@ namespace Models
                     bytesEnviados += socket.Send(buffer, offset + bytesEnviados, size - bytesEnviados,
                         SocketFlags.None);
                 }
-                catch (SocketException e)
+                catch (SocketException ex)
                 {
-                    if (e.SocketErrorCode == SocketError.WouldBlock || e.SocketErrorCode == SocketError.IOPending ||
-                        e.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
+                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.IOPending ||
+                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
                     {
                         // Buffer cheio, esperar
                         Thread.Sleep(30);
@@ -190,10 +193,10 @@ namespace Models
                     bytesRecebidos += socket.Receive(buffer, offset + bytesRecebidos, size - bytesRecebidos,
                         SocketFlags.None);
                 }
-                catch (SocketException e)
+                catch (SocketException ex)
                 {
-                    if (e.SocketErrorCode == SocketError.WouldBlock || e.SocketErrorCode == SocketError.IOPending ||
-                        e.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
+                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.IOPending ||
+                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
                     {
                         // Buffer vazio, esperar
                         Thread.Sleep(30);
@@ -225,8 +228,6 @@ namespace Models
                 if (clienteConectado.User.Email != utilizadorVerificar.Email) return;
                 if (clienteConectado.User.IsOnline)
                 {
-                    // Utilizador já conectado e registado
-                    // Console.WriteLine("O " + clienteConectado.User.Nome + " já estava online!");
                     utilizadorEncontrado = clienteConectado.User;
                 }
             });
@@ -268,11 +269,8 @@ namespace Models
                 string line;
                 while ((line = sr.ReadLine()) != null)
                 {
-                    if (line.Contains(utilizador.Email))
-                    {
-                        // Console.WriteLine("Utilizador já registado!");
-                        return JsonConvert.DeserializeObject<Utilizador>(line);
-                    }
+                    if (!line.Contains(utilizador.Email)) continue;
+                    return JsonConvert.DeserializeObject<Utilizador>(line);
                 }
             }
 

@@ -10,8 +10,9 @@ namespace Models
             Login,
             BlockLogin,
             EntrarChat,
-            LeaveChat,
-            SendMessage,
+            LeaveChat,                      // Operação desnecessária???
+            SendMessage,                    // TODO: Clarificar as operações, ex.: SendMessageServerCliente
+                                            // TODO:                               SendMessageClientServer
             GetUserInfo,
             NewUserOnline,
             SendFile
@@ -24,7 +25,7 @@ namespace Models
         public Response()
         {
         }
-        
+
         /// <summary>
         /// Construtor de uma Response
         /// </summary>
@@ -37,10 +38,5 @@ namespace Models
             Mensagem = mensagem;
             Utilizador = utilizador;
         }
-
-        /*public static void SendStringMessage(NetworkStream ns, string msg)
-        {
-            ns.Write(Encoding.Unicode.GetBytes(msg), 0, Encoding.Unicode.GetBytes(msg).Length);
-        }*/
     }
 }
