@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Interop;
+using System.Windows.Media;
 using CommonServiceLocator;
+using GalaSoft.MvvmLight.CommandWpf;
 using Microsoft.Identity.Client;
 using Microsoft.Win32;
 using Models;
@@ -28,6 +31,18 @@ namespace WPFFrontendChatClient.View
 
         private MainViewModel MainViewModel { get; set; }
         private List<TabItem> TabItems { get; set; }
+
+        private ICommand PedirFicheiroCommand
+        {
+            get
+            {
+                return new RelayCommand<string>((nomeFicheiro) =>
+                {
+                    if (nomeFicheiro == null) return;
+                    PedirFicheiro(nomeFicheiro);
+                });
+            }
+        }
 
         /// <summary>
         /// Construtor da MainWindow
@@ -207,10 +222,17 @@ namespace WPFFrontendChatClient.View
         }
 
         /// <summary>
-        /// Recebe uma Mensagem e cria os TextBlock's para colocar no chat
+        /// Recebe uma Mensagem e cria os TextBlock's para colocar no chat.
+        /// <para>
+        ///     Se a mensagem for criada pelo envio de um ficheiro, esta irá ter um comando ativado por Click para pedir
+        ///     o ficheiro (download) ao servidor.
+        /// </para>
         /// </summary>
         /// <param name="mensagem">Mensagem a mostrar</param>
-        private void DisplayMensagem(Mensagem mensagem)
+        /// <param name="isFicheiro">
+        ///     Indicador de Ficheiro (serve para criar Binding para poder clicar e descarregar o ficheiro)
+        /// </param>
+        private void DisplayMensagem(Mensagem mensagem, bool isFicheiro = false)
         {
             TabItem mensagemTabItem;
             if (mensagem.IdDestinatario.Contains("uc"))
@@ -255,7 +277,25 @@ namespace WPFFrontendChatClient.View
                     {FontWeight = FontWeights.Bold});
             }
 
-            mensagemTextBlock.Inlines.Add(" " + mensagem.Conteudo);
+            mensagemTextBlock.Inlines.Add(" ");
+
+            if (!isFicheiro)
+            {
+                mensagemTextBlock.Inlines.Add(mensagem.Conteudo);
+            }
+            else
+            {
+                // Adiciona o Comando (ativado por Click) para pedir o ficheiro
+                mensagemTextBlock.Inlines.Add(new Run(mensagem.Conteudo)
+                    {TextDecorations = TextDecorations.Underline, Foreground = Brushes.Blue});
+                mensagemTextBlock.Cursor = Cursors.Hand;
+                mensagemTextBlock.InputBindings.Add(new MouseBinding
+                {
+                    Gesture = new MouseGesture(MouseAction.LeftClick), Command = PedirFicheiroCommand,
+                    CommandParameter = mensagem.Conteudo
+                });
+            }
+
             destinatarioStackPanel?.Children.Add(mensagemTextBlock);
 
             TextBlock dataHoraEnvioTextBlock = new TextBlock {FontSize = 9, Text = mensagem.DataHoraEnvio};
@@ -322,6 +362,15 @@ namespace WPFFrontendChatClient.View
             TabItems.Insert(count, novaTabItem);
             ChatTabControl.DataContext = TabItems;
             ChatTabControl.SelectedItem = novaTabItem;
+        }
+
+        /// <summary>
+        /// Executa o procedimento que pede o ficheiro ao servidor
+        /// </summary>
+        /// <param name="nomeFicheiro">Nome do ficheiro a pedir</param>
+        private void PedirFicheiro(string nomeFicheiro)
+        {
+            MainViewModel.ServerConnectService.PedirFicheiro(nomeFicheiro);
         }
     }
 }

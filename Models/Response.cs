@@ -10,9 +10,10 @@ namespace Models
             Login,
             BlockLogin,
             EntrarChat,
-            LeaveChat,                      // Operação desnecessária???
-            SendMessage,                    // TODO: Clarificar as operações, ex.: SendMessageServerCliente
-                                            // TODO:                               SendMessageClientServer
+            LeaveChat, // Operação desnecessária???
+            SendMessage,
+            SendMessageFile,
+            PedirFile,
             GetUserInfo,
             NewUserOnline,
             SendFile

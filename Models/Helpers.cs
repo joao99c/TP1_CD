@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32;
 using Newtonsoft.Json;
 
 namespace Models
@@ -14,7 +15,7 @@ namespace Models
         public static readonly string UsersFilePath =
             Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Utilizadores\\users.txt";
 
-        private static readonly string FilesFolder =
+        public static readonly string FilesFolder =
             Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Ficheiros\\";
 
         /// <summary>
@@ -72,17 +73,34 @@ namespace Models
         /// <param name="tcpClient">Cliente que envia o ficheiro</param>
         /// <param name="extensao">Extensão do ficheiro</param>
         /// <param name="caminhoFicheiro">Caminho do ficheiro</param>
-        public static void SendFile(TcpClient tcpClient, string extensao, string caminhoFicheiro)
+        /// <param name="sendToWpf">
+        ///     Indica para onde é que vai enviar o ficheiro:
+        ///     <para>
+        ///          - true ➡ vai enviar para o WPF (não envia tanta informação sobre o ficheiro porque não é necessário)
+        ///     </para>
+        ///     <para>
+        ///         - false ➡ vai enviar para o servidor (envia toda a informação necessária sobre o ficheiro)
+        ///     </para>
+        /// </param>
+        public static void SendFile(TcpClient tcpClient, string extensao, string caminhoFicheiro,
+            bool sendToWpf = false)
         {
-            byte[] extensaoBytes = Encoding.Unicode.GetBytes(extensao);
-            byte[] extensaoSizeBytes = new byte[4];
-            extensaoSizeBytes = BitConverter.GetBytes(extensaoBytes.Length);
+            byte[] extensaoBytes = null, extensaoSizeBytes = null;
+            if (!sendToWpf)
+            {
+                extensaoBytes = Encoding.Unicode.GetBytes(extensao);
+                extensaoSizeBytes = BitConverter.GetBytes(extensaoBytes.Length);
+            }
+
             byte[] ficheiroBytes = File.ReadAllBytes(caminhoFicheiro);
-            byte[] ficheiroSizeBytes = new byte[4];
-            ficheiroSizeBytes = BitConverter.GetBytes(ficheiroBytes.Length);
+            byte[] ficheiroSizeBytes = BitConverter.GetBytes(ficheiroBytes.Length);
             NetworkStream networkStream = tcpClient.GetStream();
-            networkStream.Write(extensaoSizeBytes, 0, extensaoSizeBytes.Length);
-            networkStream.Write(extensaoBytes, 0, extensaoBytes.Length);
+            if (!sendToWpf)
+            {
+                networkStream.Write(extensaoSizeBytes, 0, extensaoSizeBytes.Length);
+                networkStream.Write(extensaoBytes, 0, extensaoBytes.Length);
+            }
+
             networkStream.Write(ficheiroSizeBytes, 0, ficheiroSizeBytes.Length);
             tcpClient.Client.SendFile(caminhoFicheiro);
         }
@@ -97,34 +115,70 @@ namespace Models
         /// <param name="tcpClient">Cliente que recebe o ficheiro</param>
         /// <param name="mensagem">Mensagem que irá aparecer no chat com o nome do ficheiro</param>
         /// <param name="mensagemModificada">Parâmetro de saída de Mensagem com o nome do ficheiro no seu conteúdo</param>
-        public static void ReceiveFile(TcpClient tcpClient, Mensagem mensagem, out Mensagem mensagemModificada)
+        /// <param name="nomeFicheiroWpf">Nome do ficheiro que vai ser recebido no WPF</param>
+        /// <param name="receiveInWpf">
+        ///     Indica quem é que vai receber o ficheiro:
+        ///     <para>
+        ///         - true ➡ é o WPF que recebe o ficheiro (recebe apenas o tamanho do ficheiro e o ficheiro e abre a
+        ///                   janela para o guardar)
+        ///     </para>
+        ///     <para>
+        ///         - false ➡ é o servidor que recebe o ficheiro (recebe toda a informação necessária sobre o ficheiro)
+        ///     </para>
+        /// </param>
+        public static void ReceiveFile(TcpClient tcpClient, Mensagem mensagem, out Mensagem mensagemModificada,
+            string nomeFicheiroWpf = null, bool receiveInWpf = false)
         {
+            byte[] extensaoBytes = null;
             NetworkStream networkStream = tcpClient.GetStream();
-            byte[] extensaoSizeBytes = new byte[4];
-            networkStream.Read(extensaoSizeBytes, 0, extensaoSizeBytes.Length);
-            byte[] extensaoBytes = new byte[BitConverter.ToInt32(extensaoSizeBytes, 0)];
-            networkStream.Read(extensaoBytes, 0, extensaoBytes.Length);
+            if (!receiveInWpf)
+            {
+                byte[] extensaoSizeBytes = new byte[4];
+                networkStream.Read(extensaoSizeBytes, 0, extensaoSizeBytes.Length);
+                extensaoBytes = new byte[BitConverter.ToInt32(extensaoSizeBytes, 0)];
+                networkStream.Read(extensaoBytes, 0, extensaoBytes.Length);
+            }
+
             byte[] ficheiroSizeBytes = new byte[4];
             networkStream.Read(ficheiroSizeBytes, 0, ficheiroSizeBytes.Length);
             int ficheiroSizeInt = BitConverter.ToInt32(ficheiroSizeBytes, 0);
 
-            string nomeFicheiro =
-                $"{FilesFolder}\\{Path.GetFileNameWithoutExtension(Path.GetRandomFileName())}{Encoding.Unicode.GetString(extensaoBytes, 0, extensaoBytes.Length)}";
+            string nomeFicheiro = null;
+            if (!receiveInWpf)
+            {
+                nomeFicheiro = FilesFolder + "\\" + Path.GetFileNameWithoutExtension(Path.GetRandomFileName()) +
+                               Encoding.Unicode.GetString(extensaoBytes, 0, extensaoBytes.Length);
+            }
+
             using (MemoryStream memoryStream = new MemoryStream())
             {
                 byte[] buffer = new byte[1024];
-                int bytesLidos, totalBytesLidos = 0;
-                while ((ficheiroSizeInt - totalBytesLidos) > 0)
+                int totalBytesLidos = 0;
+                while (ficheiroSizeInt - totalBytesLidos > 0)
                 {
-                    bytesLidos = networkStream.Read(buffer, 0, buffer.Length);
+                    int bytesLidos = networkStream.Read(buffer, 0, buffer.Length);
                     totalBytesLidos += bytesLidos;
                     memoryStream.Write(buffer, 0, bytesLidos);
                 }
 
-                File.WriteAllBytes(nomeFicheiro, memoryStream.ToArray());
+                if (!receiveInWpf)
+                {
+                    File.WriteAllBytes(nomeFicheiro, memoryStream.ToArray());
+                }
+                else
+                {
+                    SaveFileDialog saveFileDialog = new SaveFileDialog
+                        {FileName = nomeFicheiroWpf, Filter = "All files (*.*)|*.*"};
+                    if (saveFileDialog.ShowDialog() == true)
+                    {
+                        File.WriteAllBytes(saveFileDialog.FileName, memoryStream.ToArray());
+                    }
+                }
             }
 
-            mensagem.Conteudo = "Ficheiro: " + Path.GetFileName(nomeFicheiro);
+            mensagemModificada = null;
+            if (receiveInWpf) return;
+            mensagem.Conteudo = Path.GetFileName(nomeFicheiro);
             mensagemModificada = mensagem;
         }
 

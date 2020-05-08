@@ -19,7 +19,7 @@ namespace WPFFrontendChatClient.Service
 
         public event AddAlunoAction AddAlunoEvent;
 
-        public delegate void AddMensagemRecebidaActionScs(Mensagem mensagem);
+        public delegate void AddMensagemRecebidaActionScs(Mensagem mensagem, bool isFicheiro = false);
 
         public event AddMensagemRecebidaActionScs AddMensagemRecebidaEventScs;
 
@@ -33,12 +33,13 @@ namespace WPFFrontendChatClient.Service
         /// </summary>
         public ServerConnectService()
         {
-            IpAddress = "tp1cd.ddns.net";
-            // IpAddress = "192.168.1.65";
             Port = int.Parse("1000");
 
-            // IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
+            IpAddress = "tp1cd.ddns.net";
             IPEndPoint ipEndPoint = new IPEndPoint(Dns.GetHostEntry(IpAddress).AddressList[0], Port);
+
+            // IpAddress = "192.168.1.65";
+            // IPEndPoint ipEndPoint = new IPEndPoint(IPAddress.Parse(IpAddress), Port);
 
             _tcpClient = new TcpClient();
             _tcpClient.Connect(ipEndPoint);
@@ -97,6 +98,14 @@ namespace WPFFrontendChatClient.Service
                             });
                             break;
                         }
+                        case Response.Operation.SendMessageFile:
+                        {
+                            Application.Current.Dispatcher?.Invoke(delegate
+                            {
+                                AddMensagemRecebidaEventScs?.Invoke(response.Mensagem, true);
+                            });
+                            break;
+                        }
                         case Response.Operation.LeaveChat:
                         {
                             break;
@@ -133,8 +142,8 @@ namespace WPFFrontendChatClient.Service
         /// <param name="mensagem">Mensagem a enviar</param>
         public void EnviarMensagem(Mensagem mensagem)
         {
-            Response resp = new Response(Response.Operation.SendMessage, UtilizadorLigado, mensagem);
-            Helpers.SendSerializedMessage(_tcpClient, resp);
+            Response response = new Response(Response.Operation.SendMessage, UtilizadorLigado, mensagem);
+            Helpers.SendSerializedMessage(_tcpClient, response);
         }
 
         /// <summary>
@@ -146,9 +155,21 @@ namespace WPFFrontendChatClient.Service
         public void EnviarFicheiro(string caminhoFicheiro, Mensagem mensagem)
         {
             // Criar mensagem para aparecer no chat
-            Response resp = new Response(Response.Operation.SendFile, UtilizadorLigado, mensagem);
-            Helpers.SendSerializedMessage(_tcpClient, resp);
+            Response response = new Response(Response.Operation.SendFile, UtilizadorLigado, mensagem);
+            Helpers.SendSerializedMessage(_tcpClient, response);
             Helpers.SendFile(_tcpClient, Path.GetExtension(caminhoFicheiro), caminhoFicheiro);
+        }
+
+        /// <summary>
+        /// Pede um ficheiro ao servidor e executa o procedimento que o recebe
+        /// </summary>
+        /// <param name="nomeFicheiro">Nome do ficheiro a pedir</param>
+        public void PedirFicheiro(string nomeFicheiro)
+        {
+            Response response = new Response(Response.Operation.PedirFile, UtilizadorLigado,
+                new Mensagem(null, null, null, null, null, nomeFicheiro));
+            Helpers.SendSerializedMessage(_tcpClient, response);
+            Helpers.ReceiveFile(_tcpClient, null, out _, nomeFicheiro, true);
         }
     }
 }

@@ -197,7 +197,7 @@ namespace ChatServer
             private void MessageHandler(Cliente clienteConectado)
             {
                 // TODO: Quando o WPF é fechado a conexão não cai!
-                
+
                 // Obtém a "Response" a tratar
                 Response response = Helpers.ReceiveSerializedMessage(clienteConectado.TcpClient);
                 switch (response.Operacao)
@@ -216,9 +216,7 @@ namespace ChatServer
                         Helpers.ReceiveFile(clienteConectado.TcpClient, response.Mensagem,
                             out Mensagem mensagemModificada);
 
-                        // TODO: Criar nova Operation para a response??                ⬇ (SendMessageFile)
-
-                        Response responseModificada = new Response(Response.Operation.SendMessage,
+                        Response responseModificada = new Response(Response.Operation.SendMessageFile,
                             clienteConectado.User, mensagemModificada);
 
                         string filename = mensagemModificada.IdDestinatario + ".txt";
@@ -229,6 +227,12 @@ namespace ChatServer
                             if (!cliente.User.IsOnline) return;
                             Helpers.SendSerializedMessage(cliente.TcpClient, responseModificada);
                         });
+                        break;
+                    }
+                    case Response.Operation.PedirFile:
+                    {
+                        Helpers.SendFile(clienteConectado.TcpClient, null,
+                            Helpers.FilesFolder + response.Mensagem.Conteudo, true);
                         break;
                     }
                     case Response.Operation.LeaveChat:

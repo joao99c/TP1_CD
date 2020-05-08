@@ -29,14 +29,13 @@ namespace WPFFrontendChatClient.ViewModel
         public ObservableCollection<Utilizador> Alunos { get; set; }
         public ObservableCollection<Utilizador> Professores { get; set; }
         public ObservableCollection<Aula> Aulas { get; set; }
-        private ObservableCollection<Mensagem> Mensagens { set; get; }
         public ICommand AddProfessorTeste { get; set; }
 
         public delegate void AddSeparadorAction(string displayName, string displayId, string idName);
 
         public event AddSeparadorAction AddSeparadorEvent;
 
-        public delegate void AddMensagemRecebidaActionMvm(Mensagem mensagem);
+        public delegate void AddMensagemRecebidaActionMvm(Mensagem mensagem, bool isFicheiro = false);
 
         public event AddMensagemRecebidaActionMvm AddMensagemRecebidaEventMvm;
 
@@ -48,7 +47,6 @@ namespace WPFFrontendChatClient.ViewModel
             Alunos = new ObservableCollection<Utilizador>();
             Aulas = new ObservableCollection<Aula>();
             Professores = new ObservableCollection<Utilizador>();
-            Mensagens = new ObservableCollection<Mensagem>();
 
             AddProfessorTeste = new RelayCommand(AddProfessorTesteAction);
         }
@@ -72,9 +70,12 @@ namespace WPFFrontendChatClient.ViewModel
         /// <para>Este procedimento evoca outro evento que executa o procedimento de "DisplayMensagemRecebida" na "MainWindow"</para>
         /// </summary>
         /// <param name="mensagem"></param>
-        private void AddMensagemRecebidaChat(Mensagem mensagem)
+        /// <param name="isFicheiro">
+        ///     Indicador de Ficheiro (serve para criar Binding para poder clicar e descarregar o ficheiro)
+        /// </param>
+        private void AddMensagemRecebidaChat(Mensagem mensagem, bool isFicheiro = false)
         {
-            AddMensagemRecebidaEventMvm?.Invoke(mensagem);
+            AddMensagemRecebidaEventMvm?.Invoke(mensagem, isFicheiro);
         }
 
         /// <summary>
