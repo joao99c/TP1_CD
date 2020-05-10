@@ -88,6 +88,13 @@ namespace WPFFrontendChatClient.Service
                     {
                         case Response.Operation.EntrarChat:
                         {
+                            // response.HistoricoChat.ForEach(mensagem =>
+                            // {
+                            Application.Current.Dispatcher?.Invoke(delegate
+                            {
+                                AddMensagemRecebidaEventScs?.Invoke(response.Mensagem);
+                            });
+                            // });
                             break;
                         }
                         case Response.Operation.SendMessage:
@@ -170,6 +177,20 @@ namespace WPFFrontendChatClient.Service
                 new Mensagem(null, null, null, null, null, nomeFicheiro));
             Helpers.SendSerializedMessage(_tcpClient, response);
             Helpers.ReceiveFile(_tcpClient, null, out _, nomeFicheiro, true);
+        }
+
+        /// <summary>
+        /// Pede as mensagens de um determinado chat
+        /// </summary>
+        /// <param name="idChat">Id do chat a pedir as mensagens</param>
+        public void EntrarChat(string idChat)
+        {
+            Response response = new Response(Response.Operation.EntrarChat, UtilizadorLigado,
+                new Mensagem(null, null, null, null, null, null))
+            {
+                Mensagem = {Conteudo = idChat.Contains("uc") ? idChat : idChat.Remove(0, 2)}
+            };
+            Helpers.SendSerializedMessage(_tcpClient, response);
         }
     }
 }

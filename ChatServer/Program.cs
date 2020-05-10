@@ -5,7 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using Models;
+using Newtonsoft.Json;
 
 namespace ChatServer
 {
@@ -71,9 +73,7 @@ namespace ChatServer
                         Console.WriteLine("Waiting for connections...");
                         TcpClient client = TcpListener.AcceptTcpClient();
                         Console.WriteLine("Connected!");
-                        // Console.WriteLine(GetState(client));
 
-                        Console.WriteLine("Utilizadores ligados: " + ClientesConectados.Count);
                         Thread connectionThread = new Thread(() => ListenForClientMessages(client));
                         connectionThread.Start();
                     }
@@ -92,6 +92,7 @@ namespace ChatServer
             private void ListenForClientMessages(TcpClient connectedTcpClient)
             {
                 ClientesConectados.Add(new Cliente(connectedTcpClient));
+                Console.WriteLine("Utilizadores ligados: " + ClientesConectados.Count);
                 Cliente clienteConectado = ClientesConectados.Last();
                 while (true)
                 {
@@ -178,13 +179,11 @@ namespace ChatServer
                     if (clienteConectado.User.Email == connectedCliente.User.Email) return;
                     // 2
                     Helpers.SendSerializedMessage(clienteConectado.TcpClient, novoUtilizadorParaClientesConectados);
-                    // Console.WriteLine($"Novo Utilizador Online enviado para {clienteConectado.User.Nome}!");
 
                     //3
                     Response clientesConectadosParaNovoUtilizador =
                         new Response(Response.Operation.NewUserOnline, clienteConectado.User);
                     Helpers.SendSerializedMessage(connectedCliente.TcpClient, clientesConectadosParaNovoUtilizador);
-                    // Console.WriteLine($"{clienteConectado.User.Nome} enviado para novo Utilizador Online!");
                 });
                 return connectedCliente;
             }
@@ -204,6 +203,7 @@ namespace ChatServer
                 {
                     case Response.Operation.EntrarChat:
                     {
+                        SendChat(clienteConectado, response.Mensagem.Conteudo);
                         break;
                     }
                     case Response.Operation.SendMessage:
@@ -283,7 +283,7 @@ namespace ChatServer
             {
                 // Filename:
                 //     - Aula: uc10
-                //     - MP: 15310_15315 
+                //     - MP: id_id (idMenor_idMaior)
                 // Lobby: idDestinatario = 0 
 
                 string filename = null;
@@ -336,11 +336,36 @@ namespace ChatServer
             }
         }
 
-        /*private static TcpState GetState(TcpClient tcpClient)
+        /// <summary>
+        /// Envia todas as mensagens de um chat para um Utilizador que abre o separador desse chat
+        /// TODO: Ver a melhor maneira de enviar as mensagens:
+        /// TODO:     - Enviar uma por uma, de rajada não são enviadas, é necessário esperar entre elas para enviar
+        /// TODO:     - Tentar enviar todas de uma vês, tentei com List<Mensagem> mas se essa lista tiver muitos
+        /// TODO:       elementos (mais de 2) a Response não é enviada.
+        /// </summary>
+        /// <param name="clienteConectado">Cliente para quem vai ser enviado o histórico de Mensagens</param>
+        /// <param name="idChat">Id do chat que vai ser enviado</param>
+        private static async void SendChat(Cliente clienteConectado, string idChat)
         {
-            TcpConnectionInformation foo = IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpConnections()
-                .SingleOrDefault(x => x.LocalEndPoint.Equals(tcpClient.Client.LocalEndPoint));
-            return foo?.State ?? TcpState.Unknown;
-        }*/
+            string ficheiro = idChat.Contains("uc")
+                ? Helpers.ChatsFolder + idChat + ".txt"
+                : clienteConectado.User.Id < int.Parse(idChat)
+                    ? Helpers.ChatsFolder + clienteConectado.User.Id + "_" + idChat + ".txt"
+                    : Helpers.ChatsFolder + idChat + "_" + clienteConectado.User.Id + ".txt";
+            if (!File.Exists(ficheiro)) return;
+            // List<Mensagem> historicoChat=new List<Mensagem>();
+            using (StreamReader streamReader = new StreamReader(ficheiro))
+            {
+                string line;
+                while ((line = streamReader.ReadLine()) != null)
+                {
+                    // historicoChat.Add(JsonConvert.DeserializeObject<Mensagem>(line));
+                    Response response = new Response(Response.Operation.EntrarChat, clienteConectado.User,
+                        JsonConvert.DeserializeObject<Mensagem>(line));
+                    Helpers.SendSerializedMessage(clienteConectado.TcpClient, response);
+                    await Task.Delay(100);
+                }
+            }
+        }
     }
 }

@@ -18,6 +18,9 @@ namespace Models
         public static readonly string FilesFolder =
             Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Ficheiros\\";
 
+        public static readonly string ChatsFolder =
+            Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Chats\\";
+
         /// <summary>
         /// Envia mensagem serializada em Json
         /// </summary>
@@ -28,7 +31,7 @@ namespace Models
             byte[] enviar = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(response));
             try
             {
-                Enviar(tcpClient.Client, enviar, 0, enviar.Length, 10000);
+                Send(tcpClient.Client, enviar, 0, enviar.Length, 10000);
             }
             catch (Exception ex)
             {
@@ -51,7 +54,7 @@ namespace Models
                 byte[] buffer = new byte[tcpClient.Available];
                 try
                 {
-                    Receber(tcpClient.Client, buffer, 0, tcpClient.Available, 10000);
+                    Receive(tcpClient.Client, buffer, 0, tcpClient.Available, 10000);
                     string jsonString = Encoding.Unicode.GetString(buffer, 0, buffer.Length);
                     Response response = JsonConvert.DeserializeObject<Response>(jsonString);
                     return response;
@@ -191,7 +194,7 @@ namespace Models
         /// <param name="size">Quantidade de bytes a enviar</param>
         /// <param name="timeout">Tempo máximo para o envio</param>
         /// <exception cref="Exception">Erro</exception>
-        private static void Enviar(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        private static void Send(Socket socket, byte[] buffer, int offset, int size, int timeout)
         {
             int startTickCount = Environment.TickCount, bytesEnviados = 0;
             do
@@ -232,7 +235,7 @@ namespace Models
         /// <param name="size">Quantidade de bytes a receber</param>
         /// <param name="timeout">Tempo máximo para a receção</param>
         /// <exception cref="Exception">Erro</exception>
-        private static void Receber(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        private static void Receive(Socket socket, byte[] buffer, int offset, int size, int timeout)
         {
             int startTickCount = Environment.TickCount, bytesRecebidos = 0;
             do
@@ -262,6 +265,29 @@ namespace Models
                     }
                 }
             } while (bytesRecebidos < size);
+        }
+
+        /// <summary>
+        /// Verifica se um Utilizador está registado
+        /// </summary>
+        /// <param name="utilizador">Utilizador a verificar</param>
+        /// <returns>
+        ///     null -> Utilizador não está registado;
+        ///     Utilizador -> Utilizador está registado.
+        /// </returns>
+        public static Utilizador GetRegisteredUser(Utilizador utilizador)
+        {
+            using (StreamReader streamReader = new StreamReader(UsersFilePath))
+            {
+                string line;
+                while ((line = streamReader.ReadLine()) != null)
+                {
+                    if (!line.Contains(utilizador.Email)) continue;
+                    return JsonConvert.DeserializeObject<Utilizador>(line);
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -309,40 +335,16 @@ namespace Models
         }
 
         /// <summary>
-        /// Verifica se um Utilizador está registado
-        /// </summary>
-        /// <param name="utilizador">Utilizador a verificar</param>
-        /// <returns>
-        ///     null -> Utilizador não está registado;
-        ///     Utilizador -> Utilizador está registado.
-        /// </returns>
-        public static Utilizador GetRegisteredUser(Utilizador utilizador)
-        {
-            using (StreamReader sr = new StreamReader(UsersFilePath))
-            {
-                string line;
-                while ((line = sr.ReadLine()) != null)
-                {
-                    if (!line.Contains(utilizador.Email)) continue;
-                    return JsonConvert.DeserializeObject<Utilizador>(line);
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
         /// Guarda a Mensagem num ficheiro
         /// </summary>
         /// <param name="mensagem">Mensagem a guardar</param>
         /// <param name="filename">Nome do ficheiro onde guardar</param>
         public static void SaveMessageInFile(Mensagem mensagem, string filename)
         {
-            string chatsDirectory = $"{Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName}\\Chats\\";
             // Cria/Abre ficheiro para escrever
-            using (StreamWriter streamWriter = !File.Exists(chatsDirectory + filename)
-                ? File.CreateText(chatsDirectory + filename)
-                : File.AppendText(chatsDirectory + filename))
+            using (StreamWriter streamWriter = !File.Exists(ChatsFolder + filename)
+                ? File.CreateText(ChatsFolder + filename)
+                : File.AppendText(ChatsFolder + filename))
             {
                 streamWriter.WriteLine(JsonConvert.SerializeObject(mensagem));
             }

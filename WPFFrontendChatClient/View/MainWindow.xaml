@@ -146,6 +146,8 @@
                     </Style>
                     <Style TargetType="StackPanel">
                         <Setter Property="Orientation" Value="Vertical" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                        <!-- <Setter Property="FlowDirection" Value="RightToLeft"></Setter> -->
                     </Style>
                 </TabControl.Resources>
             </TabControl>

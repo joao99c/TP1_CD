@@ -20,7 +20,10 @@ namespace Models
         }
 
         public Operation Operacao { get; set; }
+
         public Mensagem Mensagem { get; set; }
+
+        // public List<Mensagem> HistoricoChat { get; set; }
         public Utilizador Utilizador { get; set; }
 
         public Response()
@@ -33,11 +36,14 @@ namespace Models
         /// <param name="operacao">Operação</param>
         /// <param name="utilizador">Utilizador que a cria</param>
         /// <param name="mensagem">Mensagem da Response</param>
-        public Response(Operation operacao, Utilizador utilizador, Mensagem mensagem = null)
+        // /// <param name="historicoChat"></param>
+        public Response(Operation operacao, Utilizador utilizador,
+            Mensagem mensagem = null /*, List<Mensagem> historicoChat=null*/)
         {
             Operacao = operacao;
-            Mensagem = mensagem;
             Utilizador = utilizador;
+            Mensagem = mensagem;
+            // HistoricoChat = historicoChat;
         }
     }
 }

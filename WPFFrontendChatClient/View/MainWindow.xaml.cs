@@ -362,6 +362,8 @@ namespace WPFFrontendChatClient.View
             TabItems.Insert(count, novaTabItem);
             ChatTabControl.DataContext = TabItems;
             ChatTabControl.SelectedItem = novaTabItem;
+            if (idName == "id0") return;
+            MainViewModel.ServerConnectService.EntrarChat(idName);
         }
 
         /// <summary>
