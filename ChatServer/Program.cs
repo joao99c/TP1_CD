@@ -5,9 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
-using System.Threading.Tasks;
 using Models;
-using Newtonsoft.Json;
 
 namespace ChatServer
 {
@@ -150,7 +148,7 @@ namespace ChatServer
 
                 connectedCliente.User.IsOnline = true;
 
-                // FAKE INFO
+                // FAKE INFO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                 connectedCliente.User.Curso = new Curso("ESI", new List<UnidadeCurricular>
                 {
                     new UnidadeCurricular(1, "CD"),
@@ -158,7 +156,7 @@ namespace ChatServer
                 });
                 connectedCliente.User.UnidadesCurriculares = new List<UnidadeCurricular>
                     {new UnidadeCurricular(3, "LP2")};
-                // FIM FAKE INFO
+                // FIM FAKE INFO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
                 /*
                  * Novo Utilizador ligado:
@@ -203,7 +201,7 @@ namespace ChatServer
                 {
                     case Response.Operation.EntrarChat:
                     {
-                        SendChat(clienteConectado, response.Mensagem.Conteudo);
+                        Helpers.SendChat(clienteConectado, response.Mensagem.Conteudo);
                         break;
                     }
                     case Response.Operation.SendMessage:
@@ -332,38 +330,6 @@ namespace ChatServer
                         cliente.User.IsOnline && cliente.User.Id == int.Parse(mensagem.IdDestinatario));
                     Helpers.SendSerializedMessage(destinatario.TcpClient, resMsgToDestinatario);
                     Helpers.SaveMessageInFile(mensagem, filename);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Envia todas as mensagens de um chat para um Utilizador que abre o separador desse chat
-        /// TODO: Ver a melhor maneira de enviar as mensagens:
-        /// TODO:     - Enviar uma por uma, de rajada não são enviadas, é necessário esperar entre elas para enviar
-        /// TODO:     - Tentar enviar todas de uma vês, tentei com List<Mensagem> mas se essa lista tiver muitos
-        /// TODO:       elementos (mais de 2) a Response não é enviada.
-        /// </summary>
-        /// <param name="clienteConectado">Cliente para quem vai ser enviado o histórico de Mensagens</param>
-        /// <param name="idChat">Id do chat que vai ser enviado</param>
-        private static async void SendChat(Cliente clienteConectado, string idChat)
-        {
-            string ficheiro = idChat.Contains("uc")
-                ? Helpers.ChatsFolder + idChat + ".txt"
-                : clienteConectado.User.Id < int.Parse(idChat)
-                    ? Helpers.ChatsFolder + clienteConectado.User.Id + "_" + idChat + ".txt"
-                    : Helpers.ChatsFolder + idChat + "_" + clienteConectado.User.Id + ".txt";
-            if (!File.Exists(ficheiro)) return;
-            // List<Mensagem> historicoChat=new List<Mensagem>();
-            using (StreamReader streamReader = new StreamReader(ficheiro))
-            {
-                string line;
-                while ((line = streamReader.ReadLine()) != null)
-                {
-                    // historicoChat.Add(JsonConvert.DeserializeObject<Mensagem>(line));
-                    Response response = new Response(Response.Operation.EntrarChat, clienteConectado.User,
-                        JsonConvert.DeserializeObject<Mensagem>(line));
-                    Helpers.SendSerializedMessage(clienteConectado.TcpClient, response);
-                    await Task.Delay(100);
                 }
             }
         }

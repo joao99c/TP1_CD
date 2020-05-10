@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Models
 {
@@ -23,9 +24,12 @@ namespace Models
 
         public Mensagem Mensagem { get; set; }
 
-        // public List<Mensagem> HistoricoChat { get; set; }
+        public List<Mensagem> HistoricoChat { get; set; }
         public Utilizador Utilizador { get; set; }
 
+        /// <summary>
+        /// Construtor utilizado pelo Deserialize
+        /// </summary>
         public Response()
         {
         }
@@ -36,14 +40,16 @@ namespace Models
         /// <param name="operacao">Operação</param>
         /// <param name="utilizador">Utilizador que a cria</param>
         /// <param name="mensagem">Mensagem da Response</param>
-        // /// <param name="historicoChat"></param>
-        public Response(Operation operacao, Utilizador utilizador,
-            Mensagem mensagem = null /*, List<Mensagem> historicoChat=null*/)
+        /// <param name="historicoChat">
+        ///     Lista com todas as mensagens de um chat (utilizado só quando um Utilizador abre um separador de chat)
+        /// </param>
+        public Response(Operation operacao, Utilizador utilizador, Mensagem mensagem = null,
+            List<Mensagem> historicoChat = null)
         {
             Operacao = operacao;
             Utilizador = utilizador;
             Mensagem = mensagem;
-            // HistoricoChat = historicoChat;
+            HistoricoChat = historicoChat;
         }
     }
 }

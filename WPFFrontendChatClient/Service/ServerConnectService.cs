@@ -88,13 +88,13 @@ namespace WPFFrontendChatClient.Service
                     {
                         case Response.Operation.EntrarChat:
                         {
-                            // response.HistoricoChat.ForEach(mensagem =>
-                            // {
-                            Application.Current.Dispatcher?.Invoke(delegate
+                            response.HistoricoChat.ForEach(mensagem =>
                             {
-                                AddMensagemRecebidaEventScs?.Invoke(response.Mensagem);
+                                Application.Current.Dispatcher?.Invoke(delegate
+                                {
+                                    AddMensagemRecebidaEventScs?.Invoke(mensagem);
+                                });
                             });
-                            // });
                             break;
                         }
                         case Response.Operation.SendMessage:

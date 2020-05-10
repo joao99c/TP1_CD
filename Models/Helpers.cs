@@ -18,8 +18,90 @@ namespace Models
         public static readonly string FilesFolder =
             Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Ficheiros\\";
 
-        public static readonly string ChatsFolder =
+        private static readonly string ChatsFolder =
             Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName + "\\Chats\\";
+
+        /// <summary>
+        /// Envia bytes pelo TCP Client
+        /// </summary>
+        /// <param name="socket">Socket do TCP Client</param>
+        /// <param name="buffer">Buffer de bytes a enviar</param>
+        /// <param name="offset">Posição inicial de envio de bytes</param>
+        /// <param name="size">Quantidade de bytes a enviar</param>
+        /// <param name="timeout">Tempo máximo para o envio</param>
+        /// <exception cref="Exception">Erro</exception>
+        private static void Send(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        {
+            int startTickCount = Environment.TickCount, bytesEnviados = 0;
+            do
+            {
+                if (Environment.TickCount > startTickCount + timeout)
+                {
+                    throw new Exception("Timeout.");
+                }
+
+                try
+                {
+                    bytesEnviados += socket.Send(buffer, offset + bytesEnviados, size - bytesEnviados,
+                        SocketFlags.None);
+                }
+                catch (SocketException ex)
+                {
+                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.IOPending ||
+                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
+                    {
+                        // Buffer cheio, esperar
+                        Thread.Sleep(30);
+                    }
+                    else
+                    {
+                        // Erro real
+                        throw;
+                    }
+                }
+            } while (bytesEnviados < size);
+        }
+
+        /// <summary>
+        /// Recebe bytes do TCP Client
+        /// </summary>
+        /// <param name="socket">Socket do TCP Client</param>
+        /// <param name="buffer">Buffer onde guardar os bytes</param>
+        /// <param name="offset">Posição inicial de receção de bytes</param>
+        /// <param name="size">Quantidade de bytes a receber</param>
+        /// <param name="timeout">Tempo máximo para a receção</param>
+        /// <exception cref="Exception">Erro</exception>
+        private static void Receive(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        {
+            int startTickCount = Environment.TickCount, bytesRecebidos = 0;
+            do
+            {
+                if (Environment.TickCount > startTickCount + timeout)
+                {
+                    throw new Exception("Timeout.");
+                }
+
+                try
+                {
+                    bytesRecebidos += socket.Receive(buffer, offset + bytesRecebidos, size - bytesRecebidos,
+                        SocketFlags.None);
+                }
+                catch (SocketException ex)
+                {
+                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.IOPending ||
+                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
+                    {
+                        // Buffer vazio, esperar
+                        Thread.Sleep(30);
+                    }
+                    else
+                    {
+                        // Erro real
+                        throw;
+                    }
+                }
+            } while (bytesRecebidos < size);
+        }
 
         /// <summary>
         /// Envia mensagem serializada em Json
@@ -29,8 +111,10 @@ namespace Models
         public static void SendSerializedMessage(TcpClient tcpClient, Response response)
         {
             byte[] enviar = Encoding.Unicode.GetBytes(JsonConvert.SerializeObject(response));
+            byte[] tamanhoEnviar = BitConverter.GetBytes(enviar.Length);
             try
             {
+                Send(tcpClient.Client, tamanhoEnviar, 0, tamanhoEnviar.Length, 10000);
                 Send(tcpClient.Client, enviar, 0, enviar.Length, 10000);
             }
             catch (Exception ex)
@@ -51,10 +135,12 @@ namespace Models
             while (true)
             {
                 if (tcpClient.Available <= 0) continue;
-                byte[] buffer = new byte[tcpClient.Available];
+                byte[] tamanhoReceber = new byte[4];
                 try
                 {
-                    Receive(tcpClient.Client, buffer, 0, tcpClient.Available, 10000);
+                    Receive(tcpClient.Client, tamanhoReceber, 0, 4, 10000);
+                    byte[] buffer = new byte[BitConverter.ToInt32(tamanhoReceber, 0)];
+                    Receive(tcpClient.Client, buffer, 0, buffer.Length, 10000);
                     string jsonString = Encoding.Unicode.GetString(buffer, 0, buffer.Length);
                     Response response = JsonConvert.DeserializeObject<Response>(jsonString);
                     return response;
@@ -186,85 +272,31 @@ namespace Models
         }
 
         /// <summary>
-        /// Envia bytes pelo TCP Client
+        /// Envia todas as mensagens de um chat para um Utilizador que abre o separador desse chat
         /// </summary>
-        /// <param name="socket">Socket do TCP Client</param>
-        /// <param name="buffer">Buffer de bytes a enviar</param>
-        /// <param name="offset">Posição inicial de envio de bytes</param>
-        /// <param name="size">Quantidade de bytes a enviar</param>
-        /// <param name="timeout">Tempo máximo para o envio</param>
-        /// <exception cref="Exception">Erro</exception>
-        private static void Send(Socket socket, byte[] buffer, int offset, int size, int timeout)
+        /// <param name="clienteConectado">Cliente para quem vai ser enviado o histórico de Mensagens</param>
+        /// <param name="idChat">Id do chat que vai ser enviado</param>
+        public static void SendChat(Cliente clienteConectado, string idChat)
         {
-            int startTickCount = Environment.TickCount, bytesEnviados = 0;
-            do
+            string ficheiro = idChat.Contains("uc")
+                ? ChatsFolder + idChat + ".txt"
+                : clienteConectado.User.Id < int.Parse(idChat)
+                    ? ChatsFolder + clienteConectado.User.Id + "_" + idChat + ".txt"
+                    : ChatsFolder + idChat + "_" + clienteConectado.User.Id + ".txt";
+            if (!File.Exists(ficheiro)) return;
+            List<Mensagem> historicoChat = new List<Mensagem>();
+            using (StreamReader streamReader = new StreamReader(ficheiro))
             {
-                if (Environment.TickCount > startTickCount + timeout)
+                string line;
+                while ((line = streamReader.ReadLine()) != null)
                 {
-                    throw new Exception("Timeout.");
+                    historicoChat.Add(JsonConvert.DeserializeObject<Mensagem>(line));
                 }
+            }
 
-                try
-                {
-                    bytesEnviados += socket.Send(buffer, offset + bytesEnviados, size - bytesEnviados,
-                        SocketFlags.None);
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.IOPending ||
-                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
-                    {
-                        // Buffer cheio, esperar
-                        Thread.Sleep(30);
-                    }
-                    else
-                    {
-                        // Erro real
-                        throw;
-                    }
-                }
-            } while (bytesEnviados < size);
-        }
-
-        /// <summary>
-        /// Recebe bytes do TCP Client
-        /// </summary>
-        /// <param name="socket">Socket do TCP Client</param>
-        /// <param name="buffer">Buffer onde guardar os bytes</param>
-        /// <param name="offset">Posição inicial de receção de bytes</param>
-        /// <param name="size">Quantidade de bytes a receber</param>
-        /// <param name="timeout">Tempo máximo para a receção</param>
-        /// <exception cref="Exception">Erro</exception>
-        private static void Receive(Socket socket, byte[] buffer, int offset, int size, int timeout)
-        {
-            int startTickCount = Environment.TickCount, bytesRecebidos = 0;
-            do
-            {
-                if (Environment.TickCount > startTickCount + timeout)
-                {
-                    throw new Exception("Timeout.");
-                }
-
-                try
-                {
-                    bytesRecebidos += socket.Receive(buffer, offset + bytesRecebidos, size - bytesRecebidos,
-                        SocketFlags.None);
-                }
-                catch (SocketException ex)
-                {
-                    if (ex.SocketErrorCode == SocketError.WouldBlock || ex.SocketErrorCode == SocketError.IOPending ||
-                        ex.SocketErrorCode == SocketError.NoBufferSpaceAvailable)
-                    {
-                        // Buffer vazio, esperar
-                        Thread.Sleep(30);
-                    }
-                    else
-                    {
-                        // Erro real
-                        throw;
-                    }
-                }
-            } while (bytesRecebidos < size);
+            Response response = new Response(Response.Operation.EntrarChat, clienteConectado.User,
+                null, historicoChat);
+            SendSerializedMessage(clienteConectado.TcpClient, response);
         }
 
         /// <summary>
