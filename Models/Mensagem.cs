@@ -13,6 +13,8 @@ namespace Models
         // public string EmailDestinatario { get; set; }
         public string Conteudo { get; set; }
         public string DataHoraEnvio { get; set; }
+        
+        public bool IsFicheiro { get; set; }
 
         /// <summary>
         /// Construtor utilizado pelo Deserialize
@@ -30,8 +32,9 @@ namespace Models
         /// <param name="idDestinatario">Id do Destinatário</param>
         /// <param name="nomeDestinatario">Nome do Destinatário</param>
         /// <param name="conteudo">Conteúdo da Mensagem</param>
+        /// <param name="isFicheiro">Indica se a mensagem representa um upload de ficheiro</param>
         public Mensagem(string idRemetente, string nomeRemetente, string emailRemetente, string idDestinatario,
-            string nomeDestinatario, string conteudo)
+            string nomeDestinatario, string conteudo, bool isFicheiro=false)
         {
             IdRemetente = idRemetente;
             NomeRemetente = nomeRemetente;
@@ -39,6 +42,7 @@ namespace Models
             IdDestinatario = idDestinatario;
             NomeDestinatario = nomeDestinatario;
             Conteudo = conteudo;
+            IsFicheiro = isFicheiro;
             DataHoraEnvio = DateTime.Now.ToString("dd/MM/yy HH:mm");
         }
     }

@@ -35,7 +35,7 @@ namespace WPFFrontendChatClient.ViewModel
 
         public event AddSeparadorAction AddSeparadorEvent;
 
-        public delegate void AddMensagemRecebidaActionMvm(Mensagem mensagem, bool isFicheiro = false);
+        public delegate void AddMensagemRecebidaActionMvm(Mensagem mensagem);
 
         public event AddMensagemRecebidaActionMvm AddMensagemRecebidaEventMvm;
 
@@ -70,12 +70,9 @@ namespace WPFFrontendChatClient.ViewModel
         /// <para>Este procedimento evoca outro evento que executa o procedimento de "DisplayMensagemRecebida" na "MainWindow"</para>
         /// </summary>
         /// <param name="mensagem"></param>
-        /// <param name="isFicheiro">
-        ///     Indicador de Ficheiro (serve para criar Binding para poder clicar e descarregar o ficheiro)
-        /// </param>
-        private void AddMensagemRecebidaChat(Mensagem mensagem, bool isFicheiro = false)
+        private void AddMensagemRecebidaChat(Mensagem mensagem)
         {
-            AddMensagemRecebidaEventMvm?.Invoke(mensagem, isFicheiro);
+            AddMensagemRecebidaEventMvm?.Invoke(mensagem);
         }
 
         /// <summary>
@@ -127,6 +124,8 @@ namespace WPFFrontendChatClient.ViewModel
             Professores.Add(new Utilizador(++_numAux, "Professor " + _numAux, "professor" + _numAux + "@ipca.pt",
                 Utilizador.UserType.Prof,
                 new RelayCommand<Utilizador>(CriarSeparadorChatPrivado)));
+
+            // ServerConnectService.EnviarMensagem(new Mensagem("50", "Professor", "professor@ipca.pt", "uc3", "LP2", "Teste Mensagem LP2"));
         }
     }
 }

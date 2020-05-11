@@ -214,7 +214,7 @@ namespace ChatServer
                         Helpers.ReceiveFile(clienteConectado.TcpClient, response.Mensagem,
                             out Mensagem mensagemModificada);
 
-                        Response responseModificada = new Response(Response.Operation.SendMessageFile,
+                        Response responseModificada = new Response(Response.Operation.SendMessage,
                             clienteConectado.User, mensagemModificada);
 
                         string filename = mensagemModificada.IdDestinatario + ".txt";
@@ -273,7 +273,6 @@ namespace ChatServer
             /// <summary>
             /// Trata da Mensagem recebida de um Utilizador (mensagem que o servidor recebe)
             /// <para>Guarda a Mensagem no ficheiro e envia para o destinatário caso este esteja online</para>
-            /// TODO: Ver o que se passa com as mensagens de UC's extra (não aparecem na outra pessoa??)
             /// </summary>
             /// <param name="mensagem">Mensagem a ser tratada</param>
             /// <param name="utilizador">Utilizador que a enviou</param>
@@ -292,10 +291,20 @@ namespace ChatServer
                     // Nome do ficheiro = idDestinatario = "uc1" - ex.: "uc1.txt" onde 1 é o Id da Unidade Curricular
                     filename += mensagem.IdDestinatario + ".txt";
                     int idUc = int.Parse(mensagem.IdDestinatario.Remove(0, 2));
-                    // Todos os utilizadores na UC e online
+                    // Todos os utilizadores na UC (do Curso) e online
                     ClientesConectados.FindAll(cliente =>
                         cliente.User.IsOnline &&
                         cliente.User.Curso.UnidadesCurriculares.Find(unidadeCurricular =>
+                            unidadeCurricular.Id == idUc) != null).ForEach(alunoEmAula =>
+                    {
+                        if (alunoEmAula.User.Email == utilizador.Email) return;
+                        Helpers.SendSerializedMessage(alunoEmAula.TcpClient, resMsgToDestinatario);
+                    });
+
+                    // Todos os utilizadores na UC (extra) e online
+                    ClientesConectados.FindAll(cliente =>
+                        cliente.User.IsOnline &&
+                        cliente.User.UnidadesCurriculares.Find(unidadeCurricular =>
                             unidadeCurricular.Id == idUc) != null).ForEach(alunoEmAula =>
                     {
                         if (alunoEmAula.User.Email == utilizador.Email) return;

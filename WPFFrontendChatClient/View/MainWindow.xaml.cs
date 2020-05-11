@@ -189,6 +189,7 @@ namespace WPFFrontendChatClient.View
         {
             if (((TabItem) ChatTabControl.SelectedItem).Name.Contains("id0")) return;
             Mensagem mensagem = ConstruirMensagem("ficheiro");
+            mensagem.IsFicheiro = true;
             OpenFileDialog fileDialog = new OpenFileDialog();
             bool? resultado = fileDialog.ShowDialog();
             if (resultado == false) return;
@@ -229,10 +230,7 @@ namespace WPFFrontendChatClient.View
         /// </para>
         /// </summary>
         /// <param name="mensagem">Mensagem a mostrar</param>
-        /// <param name="isFicheiro">
-        ///     Indicador de Ficheiro (serve para criar Binding para poder clicar e descarregar o ficheiro)
-        /// </param>
-        private void DisplayMensagem(Mensagem mensagem, bool isFicheiro = false)
+        private void DisplayMensagem(Mensagem mensagem)
         {
             TabItem mensagemTabItem;
             if (mensagem.IdDestinatario.Contains("uc"))
@@ -251,11 +249,24 @@ namespace WPFFrontendChatClient.View
 
             if (mensagemTabItem == null)
             {
-                AddSeparadorChat(mensagem.NomeRemetente,
+                // Se não existir separador de chat aberto
+                if (mensagem.IdDestinatario.Contains("uc"))
+                {
+                    // Vai abrir um separador da UC
+                    AddSeparadorChat(mensagem.NomeDestinatario, null, mensagem.IdDestinatario);
+                    // Termina a execução da função porque ao fazer "AddSeparadorChat" todas as mensagens vão ser
+                    // apresentadas logo a mensagem recebida não pode ser mostrada (senão fica duplicada)
+                    return;
+                }
+
+                // OU Vai abrir um separador do Utilizador
+                AddSeparadorChat(mensagem.NomeDestinatario,
                     mensagem.EmailRemetente.Substring(0,
                         mensagem.EmailRemetente.IndexOf("@", StringComparison.Ordinal)),
                     mensagem.IdRemetente.Insert(0, "id"));
-                mensagemTabItem = TabItems.Last();
+                // Termina a execução da função porque ao fazer "AddSeparadorChat" todas as mensagens vão ser
+                // apresentadas logo a mensagem recebida não pode ser mostrada (senão fica duplicada)
+                return;
             }
 
             ScrollViewer destinatarioScrollViewer = (ScrollViewer) mensagemTabItem?.Content;
@@ -279,7 +290,7 @@ namespace WPFFrontendChatClient.View
 
             mensagemTextBlock.Inlines.Add(" ");
 
-            if (!isFicheiro)
+            if (!mensagem.IsFicheiro)
             {
                 mensagemTextBlock.Inlines.Add(mensagem.Conteudo);
             }
@@ -330,7 +341,7 @@ namespace WPFFrontendChatClient.View
         }
 
         /// <summary>
-        /// Adiciona um separador de chat.
+        /// Adiciona um separador de chat com todas as suas mensagens
         /// <para>Se o separador já existir não adiciona.</para>
         /// </summary>
         /// <param name="displayName">Nome a mostrar no título do separador</param>

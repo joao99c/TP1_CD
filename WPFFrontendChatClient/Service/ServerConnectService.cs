@@ -19,7 +19,7 @@ namespace WPFFrontendChatClient.Service
 
         public event AddAlunoAction AddAlunoEvent;
 
-        public delegate void AddMensagemRecebidaActionScs(Mensagem mensagem, bool isFicheiro = false);
+        public delegate void AddMensagemRecebidaActionScs(Mensagem mensagem);
 
         public event AddMensagemRecebidaActionScs AddMensagemRecebidaEventScs;
 
@@ -102,14 +102,6 @@ namespace WPFFrontendChatClient.Service
                             Application.Current.Dispatcher?.Invoke(delegate
                             {
                                 AddMensagemRecebidaEventScs?.Invoke(response.Mensagem);
-                            });
-                            break;
-                        }
-                        case Response.Operation.SendMessageFile:
-                        {
-                            Application.Current.Dispatcher?.Invoke(delegate
-                            {
-                                AddMensagemRecebidaEventScs?.Invoke(response.Mensagem, true);
                             });
                             break;
                         }
