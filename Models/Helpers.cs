@@ -241,14 +241,9 @@ namespace Models
 
             using (MemoryStream memoryStream = new MemoryStream())
             {
-                byte[] buffer = new byte[1024];
-                int totalBytesLidos = 0;
-                while (ficheiroSizeInt - totalBytesLidos > 0)
-                {
-                    int bytesLidos = networkStream.Read(buffer, 0, buffer.Length);
-                    totalBytesLidos += bytesLidos;
-                    memoryStream.Write(buffer, 0, bytesLidos);
-                }
+                byte[] buffer = new byte[ficheiroSizeInt];
+                Receive(tcpClient.Client, buffer, 0, buffer.Length, 10000);
+                memoryStream.Write(buffer, 0, buffer.Length);
 
                 if (!receiveInWpf)
                 {
