@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Models;
+using Newtonsoft.Json;
 
 namespace ChatServer
 {
@@ -28,12 +29,15 @@ namespace ChatServer
             private TcpListener TcpListener { get; set; }
             private List<Cliente> ClientesConectados { get; set; }
 
+            private List<Curso> Cursos { get; set; }
+            private List<UnidadeCurricular> UnidadeCurriculares { get; set; }
+
             /// <summary>
             /// Construtor do servidor
             /// </summary>
             public Server()
             {
-                TcpListener = new TcpListener(IPAddress.Parse("192.168.1.4"), 1000);
+                TcpListener = new TcpListener(IPAddress.Parse("192.168.1.17"), 1000);
             }
 
             /// <summary>
@@ -46,12 +50,95 @@ namespace ChatServer
                 Directory.CreateDirectory(ProjectDir + "\\Chats");
                 Directory.CreateDirectory(ProjectDir + "\\Utilizadores");
                 Directory.CreateDirectory(ProjectDir + "\\Ficheiros");
+
+                Cursos = Helpers.GetDataFromFileToObjectT<Curso>("cursos.txt");
+                UnidadeCurriculares = Helpers.GetDataFromFileToObjectT<UnidadeCurricular>("uniCurriculares.txt");
+
+
                 if (!File.Exists(Helpers.UsersFilePath))
                 {
                     using (File.CreateText(Helpers.UsersFilePath))
                     {
                     }
                 }
+
+                // List<UnidadeCurricular> ucsLesi1 = new List<UnidadeCurricular>();
+                // ucsLesi1.Add(new UnidadeCurricular(1, "LP1"));
+                // ucsLesi1.Add(new UnidadeCurricular(2, "AED1"));
+                // ucsLesi1.Add(new UnidadeCurricular(3, "AM"));
+                // ucsLesi1.Add(new UnidadeCurricular(4, "MDAL"));
+                // ucsLesi1.Add(new UnidadeCurricular(5, "AC"));
+                // ucsLesi1.Add(new UnidadeCurricular(6, "FF"));
+                // ucsLesi1.Add(new UnidadeCurricular(7, "E"));
+                // ucsLesi1.Add(new UnidadeCurricular(8, "MN"));
+                // ucsLesi1.Add(new UnidadeCurricular(9, "AED2"));
+                // ucsLesi1.Add(new UnidadeCurricular(10, "LP2"));
+                //
+                // Curso lesi1 = new Curso();
+                // lesi1.Nome = "LESI 1ºano";
+                // lesi1.UnidadesCurriculares = ucsLesi1;
+                //
+                // List<UnidadeCurricular> ucsLesi2 = new List<UnidadeCurricular>();
+                // ucsLesi2.Add(new UnidadeCurricular(11, "RC"));
+                // ucsLesi2.Add(new UnidadeCurricular(12, "SAD"));
+                // ucsLesi2.Add(new UnidadeCurricular(13, "APS"));
+                // ucsLesi2.Add(new UnidadeCurricular(14, "SOSD"));
+                // ucsLesi2.Add(new UnidadeCurricular(15, "PL"));
+                // ucsLesi2.Add(new UnidadeCurricular(16, "VC"));
+                // ucsLesi2.Add(new UnidadeCurricular(17, "CD"));
+                // ucsLesi2.Add(new UnidadeCurricular(18, "PS"));
+                // ucsLesi2.Add(new UnidadeCurricular(19, "AD"));
+                // ucsLesi2.Add(new UnidadeCurricular(20, "HM"));
+                //
+                // Curso lesi2 = new Curso();
+                // lesi2.Nome = "LESI 2ºano";
+                // lesi2.UnidadesCurriculares = ucsLesi2;
+                //
+                //
+                // List<UnidadeCurricular> ucsLesi3 = new List<UnidadeCurricular>();
+                // ucsLesi3.Add(new UnidadeCurricular(21, "ISI"));
+                // ucsLesi3.Add(new UnidadeCurricular(22, "CSI"));
+                // ucsLesi3.Add(new UnidadeCurricular(23, "IA"));
+                // ucsLesi3.Add(new UnidadeCurricular(24, "ES"));
+                // ucsLesi3.Add(new UnidadeCurricular(25, "GPE"));
+                // ucsLesi3.Add(new UnidadeCurricular(26, "SETR"));
+                // ucsLesi3.Add(new UnidadeCurricular(27, "ECE"));
+                // ucsLesi3.Add(new UnidadeCurricular(28, "SAD"));
+                // ucsLesi3.Add(new UnidadeCurricular(29, "MTW"));
+                // ucsLesi3.Add(new UnidadeCurricular(30, "P/E"));
+                //
+                // Curso lesi3 = new Curso();
+                // lesi3.Nome = "LESI 3ºano";
+                // lesi3.UnidadesCurriculares = ucsLesi3;
+                //
+                // using (StreamWriter streamWriter =
+                //     File.CreateText(Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName +
+                //                     "\\uniCurriculares.txt"))
+                // {
+                //     List<UnidadeCurricular> teste = new List<UnidadeCurricular>();
+                //     
+                //     ucsLesi1.ForEach(curricular =>
+                //     {
+                //         streamWriter.WriteLine(JsonConvert.SerializeObject(curricular));
+                //     });
+                //     ucsLesi2.ForEach(curricular =>
+                //     {
+                //         streamWriter.WriteLine(JsonConvert.SerializeObject(curricular));
+                //     });
+                //     ucsLesi3.ForEach(curricular =>
+                //     {
+                //         streamWriter.WriteLine(JsonConvert.SerializeObject(curricular));
+                //     });
+                // }
+                //
+                // using (StreamWriter streamWriter = File.CreateText(Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName +
+                //                                                   "\\cursos.txt"))
+                // {
+                //     streamWriter.WriteLine(JsonConvert.SerializeObject(lesi1));
+                //     streamWriter.WriteLine(JsonConvert.SerializeObject(lesi2));
+                //     streamWriter.WriteLine(JsonConvert.SerializeObject(lesi3));
+                // }
+
 
                 // Start Listener
                 TcpListener.Start();
@@ -149,13 +236,10 @@ namespace ChatServer
                 connectedCliente.User.IsOnline = true;
 
                 // FAKE INFO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-                connectedCliente.User.Curso = new Curso("ESI", new List<UnidadeCurricular>
-                {
-                    new UnidadeCurricular(1, "CD"),
-                    new UnidadeCurricular(2, "AEDII")
-                });
-                connectedCliente.User.UnidadesCurriculares = new List<UnidadeCurricular>
-                    {new UnidadeCurricular(3, "LP2")};
+                connectedCliente.User.Curso = Cursos.Find(curso => curso.Nome == "LESI 1ºano");
+                List<UnidadeCurricular> fakeInfoUC = new List<UnidadeCurricular>();
+                fakeInfoUC.Add(UnidadeCurriculares.Find(uc => uc.Nome == "CD"));
+                connectedCliente.User.UnidadesCurriculares = fakeInfoUC;
                 // FIM FAKE INFO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
                 /*
