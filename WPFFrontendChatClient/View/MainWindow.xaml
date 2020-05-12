@@ -126,7 +126,7 @@
                 <Button Click="EnviarMensagem_OnClick" Content="Enviar" Grid.Column="2" FontSize="15" Margin="10,0,0,0"
                         Padding="15,0,15,0" HorizontalAlignment="Left" />
             </Grid>
-            <TabControl x:Name="ChatTabControl" ItemsSource="{Binding}">
+            <TabControl x:Name="ChatTabControl" ItemsSource="{Binding}" Margin="0,0,10,0">
                 <TabControl.Resources>
                     <DataTemplate x:Key="TabHeader" DataType="TabItem">
                         <DockPanel>

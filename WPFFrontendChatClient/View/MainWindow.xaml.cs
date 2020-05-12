@@ -188,12 +188,12 @@ namespace WPFFrontendChatClient.View
         private void EnviarFicheiro_OnClick(object sender, RoutedEventArgs e)
         {
             if (((TabItem) ChatTabControl.SelectedItem).Name.Contains("id0")) return;
-            Mensagem mensagem = ConstruirMensagem("ficheiro");
-            mensagem.IsFicheiro = true;
             OpenFileDialog fileDialog = new OpenFileDialog();
             bool? resultado = fileDialog.ShowDialog();
             if (resultado == false) return;
             string caminhoFicheiro = fileDialog.FileName;
+            Mensagem mensagem = ConstruirMensagem("ficheiro");
+            mensagem.IsFicheiro = true;
             MainViewModel.ServerConnectService.EnviarFicheiro(caminhoFicheiro, mensagem);
         }
 
@@ -260,7 +260,7 @@ namespace WPFFrontendChatClient.View
                 }
 
                 // OU Vai abrir um separador do Utilizador
-                AddSeparadorChat(mensagem.NomeDestinatario,
+                AddSeparadorChat(mensagem.NomeRemetente,
                     mensagem.EmailRemetente.Substring(0,
                         mensagem.EmailRemetente.IndexOf("@", StringComparison.Ordinal)),
                     mensagem.IdRemetente.Insert(0, "id"));

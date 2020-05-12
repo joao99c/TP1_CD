@@ -382,12 +382,17 @@ namespace Models
             }
         }
 
-       public static List<T> GetDataFromFileToObjectT<T>(string filename)
+        /// <summary>
+        /// Lê um ficheiro e coloca a sua informação numa lista do tipo T
+        /// </summary>
+        /// <param name="filename">Nome do ficheiro a ler</param>
+        /// <typeparam name="T">Tipo de dados a serem lidos</typeparam>
+        /// <returns></returns>
+        public static List<T> GetDataFromFileToObjectT<T>(string filename)
         {
             List<T> aux = new List<T>();
             string projectDir = Directory.GetParent(Environment.CurrentDirectory).Parent?.FullName;
             StreamReader srUc = new StreamReader(projectDir + $"\\{filename}");
-
             string line;
             while ((line = srUc.ReadLine()) != null)
             {
@@ -396,6 +401,5 @@ namespace Models
 
             return aux;
         }
-        
     }
 }

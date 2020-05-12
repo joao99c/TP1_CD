@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using Models;
-using Newtonsoft.Json;
 
 namespace ChatServer
 {
@@ -237,9 +236,11 @@ namespace ChatServer
 
                 // FAKE INFO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                 connectedCliente.User.Curso = Cursos.Find(curso => curso.Nome == "LESI 1ºano");
-                List<UnidadeCurricular> fakeInfoUC = new List<UnidadeCurricular>();
-                fakeInfoUC.Add(UnidadeCurriculares.Find(uc => uc.Nome == "CD"));
-                connectedCliente.User.UnidadesCurriculares = fakeInfoUC;
+                List<UnidadeCurricular> fakeInfoUc = new List<UnidadeCurricular>
+                {
+                    UnidadeCurriculares.Find(uc => uc.Nome == "CD")
+                };
+                connectedCliente.User.UnidadesCurriculares = fakeInfoUc;
                 // FIM FAKE INFO XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
                 /*
@@ -301,7 +302,14 @@ namespace ChatServer
                         Response responseModificada = new Response(Response.Operation.SendMessage,
                             clienteConectado.User, mensagemModificada);
 
-                        string filename = mensagemModificada.IdDestinatario + ".txt";
+                        string filename = mensagemModificada.IdDestinatario.Contains("uc")
+                            ? mensagemModificada.IdDestinatario + ".txt"
+                            : int.Parse(mensagemModificada.IdDestinatario) > int.Parse(mensagemModificada.IdRemetente)
+                                ? int.Parse(mensagemModificada.IdRemetente) + "_" +
+                                  int.Parse(mensagemModificada.IdDestinatario) + ".txt"
+                                : int.Parse(mensagemModificada.IdDestinatario) + "_" +
+                                  int.Parse(mensagemModificada.IdRemetente) + ".txt";
+
                         Helpers.SaveMessageInFile(mensagemModificada, filename);
 
                         ClientesConectados.ForEach(cliente =>
