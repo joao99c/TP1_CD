@@ -208,8 +208,8 @@ namespace Models
         /// <param name="receiveInWpf">
         ///     Indica quem é que vai receber o ficheiro:
         ///     <para>
-        ///         - true ➡ é o WPF que recebe o ficheiro (recebe apenas o tamanho do ficheiro e o ficheiro e abre a
-        ///                   janela para o guardar)
+        ///         - true ➡ é o WPF que recebe o ficheiro (recebe apenas o tamanho do ficheiro e abre a janela para
+        ///                   o guardar)
         ///     </para>
         ///     <para>
         ///         - false ➡ é o servidor que recebe o ficheiro (recebe toda a informação necessária sobre o ficheiro)
